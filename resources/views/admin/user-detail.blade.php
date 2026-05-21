@@ -45,12 +45,32 @@
 </div>
 
 {{-- Financial Summary --}}
-<div class="grid-fit-160 mb-6 animate-fade-in-up delay-50">
-    <div class="card p-4 text-center"><div class="font-size-22 font-weight-800 text-cyan">${{ number_format($user->accounts->sum('balance'), 2) }}</div><div class="text-xs text-muted">{{ __('Total Balance') }}</div></div>
-    <div class="card p-4 text-center"><div class="font-size-22 font-weight-800 text-white">{{ $user->accounts->count() }}</div><div class="text-xs text-muted">{{ __('Accounts') }}</div></div>
-    <div class="card p-4 text-center"><div class="font-size-22 font-weight-800 text-white">{{ $user->cards->count() }}</div><div class="text-xs text-muted">{{ __('Cards') }}</div></div>
-    <div class="card p-4 text-center"><div class="font-size-22 font-weight-800 text-purple">{{ $user->loans->count() }}</div><div class="text-xs text-muted">{{ __('Loans') }}</div></div>
-    <div class="card p-4 text-center"><div class="font-size-22 font-weight-800 text-orange">${{ number_format($user->loans->whereIn('status',['approved'])->sum('remaining_balance'), 2) }}</div><div class="text-xs text-muted">{{ __('Loan Outstanding') }}</div></div>
+<div class="stats-grid mb-6 animate-fade-in-up delay-50">
+    <div class="stat-card" style="border-left: 3px solid #3b82f6;">
+        <div class="stat-icon blue">💵</div>
+        <div class="stat-value">${{ number_format($user->accounts->where('currency', 'USD')->sum('balance'), 2) }}</div>
+        <div class="stat-label">{{ __('USD Balance') }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid #f59e0b;">
+        <div class="stat-icon orange">💰</div>
+        <div class="stat-value">د.ع{{ number_format($user->accounts->where('currency', 'IQD')->sum('balance'), 0) }}</div>
+        <div class="stat-label">{{ __('IQD Balance') }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid #8b5cf6;">
+        <div class="stat-icon purple">🏦</div>
+        <div class="stat-value">{{ $user->accounts->count() }}</div>
+        <div class="stat-label">{{ __('Accounts') }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid #22c55e;">
+        <div class="stat-icon green">💳</div>
+        <div class="stat-value">{{ $user->cards->count() }}</div>
+        <div class="stat-label">{{ __('Cards') }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid #f97316;">
+        <div class="stat-icon orange">📈</div>
+        <div class="stat-value">{{ $user->loans->count() }}</div>
+        <div class="stat-label">{{ __('Loans') }}</div>
+    </div>
 </div>
 
 <div class="grid-2 align-items-start">
@@ -59,10 +79,22 @@
         <div class="card p-6 mb-6 animate-fade-in-up delay-100">
             <h3 class="section-title mb-4">🏦 {{ __('Accounts') }} ({{ $user->accounts->count() }})</h3>
             @forelse($user->accounts as $acc)
-                <div class="padding-y-12 border-bottom-divider">
+                @php
+                    $cur = \App\Models\Currency::where('code', $acc->currency)->first();
+                    $sym = $cur?->symbol ?? $acc->currency;
+                    $dec = $cur?->decimal_places ?? 2;
+                    $isUsd = $acc->currency === 'USD';
+                @endphp
+                <div style="padding: 12px 0; border-bottom: 1px solid var(--border);">
                     <div class="flex-between">
-                        <div><div class="font-medium text-white">{{ $acc->account_number }}</div><div class="text-xs text-muted">{{ ucfirst($acc->account_type) }} · {{ $acc->currency }}</div></div>
-                        <div class="text-right"><div class="font-semibold text-cyan">${{ number_format($acc->balance, 2) }}</div><div class="text-xs text-muted">{{ __('Avail') }}: ${{ number_format($acc->available_balance, 2) }}</div></div>
+                        <div>
+                            <div class="font-medium">{{ $acc->account_number }}</div>
+                            <div class="text-xs text-muted">{{ ucfirst($acc->account_type) }} · {{ $isUsd ? '🇺🇸' : '🇮🇶' }} {{ $acc->currency }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="font-semibold" style="color: {{ $isUsd ? '#3b82f6' : '#f59e0b' }};">{{ $sym }}{{ number_format($acc->balance, $dec) }}</div>
+                            <div class="text-xs text-muted">{{ __('Avail') }}: {{ $sym }}{{ number_format($acc->available_balance, $dec) }}</div>
+                        </div>
                     </div>
                 </div>
             @empty
@@ -129,18 +161,28 @@
 
         {{-- Transactions --}}
         <div class="card animate-fade-in-up delay-200">
-            <div class="section-header p-6 mb-0"><h3 class="section-title">📋 {{ __('Recent Transactions') }}</h3></div>
+            <div style="padding: 20px 24px; border-bottom: 1px solid var(--border);"><h3 class="section-title" style="margin: 0;">📋 {{ __('Recent Transactions') }}</h3></div>
             @forelse($recentTransactions as $txn)
-                <div class="transaction-item">
-                    <div class="transaction-icon {{ $txn->isCredit() ? 'credit' : 'debit' }}">{{ $txn->isCredit() ? '↓' : '↑' }}</div>
-                    <div class="transaction-details">
-                        <div class="transaction-title">{{ $txn->description ?: ucfirst(str_replace('_', ' ', $txn->type)) }}</div>
-                        <div class="transaction-meta">{{ $txn->reference_number }} · {{ $txn->created_at->diffForHumans() }}</div>
+                @php
+                    $cur = \App\Models\Currency::where('code', $txn->currency)->first();
+                    $sym = $cur?->symbol ?? $txn->currency;
+                    $dec = $cur?->decimal_places ?? 2;
+                    $isCredit = $txn->isCredit();
+                @endphp
+                <div style="display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid var(--border);">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; {{ $isCredit ? 'background: rgba(34, 197, 94, 0.1); color: #22c55e;' : 'background: rgba(239, 68, 68, 0.1); color: #ef4444;' }}">
+                        {{ $isCredit ? '↓' : '↑' }}
                     </div>
-                    <div class="transaction-amount {{ $txn->isCredit() ? 'credit' : 'debit' }}">{{ $txn->isCredit() ? '+' : '-' }}${{ number_format($txn->amount, 2) }}</div>
+                    <div style="flex: 1;">
+                        <div class="text-sm font-semibold">{{ $txn->description ?: ucfirst(str_replace('_', ' ', $txn->type)) }}</div>
+                        <div class="text-xs text-muted">{{ $txn->reference_number }} · {{ $txn->created_at->diffForHumans() }}</div>
+                    </div>
+                    <div class="font-semibold" style="color: {{ $isCredit ? '#22c55e' : '#ef4444' }};">
+                        {{ $isCredit ? '+' : '-' }}{{ $sym }}{{ number_format($txn->amount, $dec) }}
+                    </div>
                 </div>
             @empty
-                <div class="text-center empty-state-padding"><div class="text-muted text-sm">{{ __('No transactions.') }}</div></div>
+                <div style="padding: 40px; text-align: center;"><div class="text-muted text-sm">{{ __('No transactions.') }}</div></div>
             @endforelse
         </div>
     </div>
