@@ -40,7 +40,7 @@ class CashController extends Controller
             'total_transactions' => $todayTransactions->count(),
         ];
 
-        return view('admin.cash.index', compact('accounts', 'todayTransactions', 'stats'));
+        return view('admin.cash', compact('accounts', 'todayTransactions', 'stats'));
     }
 
     /**
