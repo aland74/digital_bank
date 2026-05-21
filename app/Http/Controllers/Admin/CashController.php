@@ -115,7 +115,10 @@ class CashController extends Controller
             return back()->with('error', 'Account does not belong to your branch.');
         }
 
-        DB::transaction(function () use ($account, $validated) {
+        $currency = Currency::where('code', $account->currency)->first();
+        $symbol = $currency ? $currency->symbol : '$';
+
+        DB::transaction(function () use ($account, $validated, $symbol) {
             $balanceBefore = $account->balance;
 
             $account->increment('balance', $validated['amount']);
@@ -134,9 +137,6 @@ class CashController extends Controller
                 'channel' => 'branch',
                 'completed_at' => now(),
             ]);
-
-            $currency = Currency::where('code', $account->currency)->first();
-            $symbol = $currency ? $currency->symbol : '$';
 
             Notification::create([
                 'user_id' => $account->user_id,
@@ -179,7 +179,10 @@ class CashController extends Controller
             return back()->with('error', 'Insufficient account balance.');
         }
 
-        DB::transaction(function () use ($account, $validated) {
+        $currency = Currency::where('code', $account->currency)->first();
+        $symbol = $currency ? $currency->symbol : '$';
+
+        DB::transaction(function () use ($account, $validated, $symbol) {
             $balanceBefore = $account->balance;
 
             $account->decrement('balance', $validated['amount']);
@@ -198,9 +201,6 @@ class CashController extends Controller
                 'channel' => 'branch',
                 'completed_at' => now(),
             ]);
-
-            $currency = Currency::where('code', $account->currency)->first();
-            $symbol = $currency ? $currency->symbol : '$';
 
             Notification::create([
                 'user_id' => $account->user_id,
