@@ -7,8 +7,9 @@
 
 {{-- Stats --}}
 @php
-    $totalIn = $transactions->where('isCredit', true)->sum('amount');
-    $totalOut = $transactions->where('isCredit', false)->sum('amount');
+    $creditTypes = ['deposit', 'transfer_in', 'refund', 'interest', 'loan_disbursement'];
+    $totalIn = $transactions->whereIn('type', $creditTypes)->sum('amount');
+    $totalOut = $transactions->whereNotIn('type', $creditTypes)->sum('amount');
 @endphp
 
 <div class="stats-grid mb-6 animate-fade-in-up">
@@ -19,12 +20,12 @@
     </div>
     <div class="stat-card" style="border-left: 3px solid #22c55e;">
         <div class="stat-icon green">📥</div>
-        <div class="stat-value">{{ $transactions->where('isCredit', true)->count() }}</div>
+        <div class="stat-value">{{ $transactions->whereIn('type', $creditTypes)->count() }}</div>
         <div class="stat-label">{{ __('Incoming') }}</div>
     </div>
     <div class="stat-card" style="border-left: 3px solid #ef4444;">
         <div class="stat-icon red">📤</div>
-        <div class="stat-value">{{ $transactions->where('isCredit', false)->count() }}</div>
+        <div class="stat-value">{{ $transactions->whereNotIn('type', $creditTypes)->count() }}</div>
         <div class="stat-label">{{ __('Outgoing') }}</div>
     </div>
 </div>
