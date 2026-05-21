@@ -169,7 +169,7 @@
 
             {{-- Submit --}}
             <button type="submit" class="btn btn-primary btn-lg w-full" id="submit-btn" {{ !$reserveHealth['healthy'] ? 'disabled' : '' }}>
-                {{ !$reserveHealth['healthy' ? '⚠️ ' . __('Applications Temporarily Unavailable') : '📋 ' . __('Submit Application') }}
+                {{ !$reserveHealth['healthy'] ? '⚠️ ' . __('Applications Temporarily Unavailable') : '📋 ' . __('Submit Application') }}
             </button>
         </form>
     </div>
