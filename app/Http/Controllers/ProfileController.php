@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
+use PragmaRX\Google2FA\Google2FA;
 
 class ProfileController extends Controller
 {
@@ -134,5 +135,82 @@ class ProfileController extends Controller
         }
 
         return back()->with('success', 'Document uploaded successfully! It will be reviewed within 24-48 hours.');
+    }
+
+    // ── Two-Factor Authentication ─────────────────────────────
+
+    public function showTwoFactor(Request $request)
+    {
+        $user = $request->user();
+        $qrCodeSvg = null;
+        $secretKey = null;
+
+        if (!$user->two_factor_enabled) {
+            $google2fa = new Google2FA();
+            $secretKey = $google2fa->generateSecretKey();
+            $qrCodeSvg = $google2fa->getQRCodeSvg(
+                config('app.name'),
+                $user->email,
+                $secretKey
+            );
+
+            // Store temporarily in session
+            session(['2fa_secret' => $secretKey]);
+        }
+
+        return view('profile.two-factor', compact('user', 'qrCodeSvg', 'secretKey'));
+    }
+
+    public function enableTwoFactor(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|size:6',
+        ]);
+
+        $user = $request->user();
+        $secretKey = session('2fa_secret');
+
+        if (!$secretKey) {
+            return back()->withErrors(['code' => 'Session expired. Please try again.']);
+        }
+
+        $google2fa = new Google2FA();
+
+        if (!$google2fa->verifyKey($secretKey, $request->code)) {
+            return back()->withErrors(['code' => 'Invalid verification code. Please try again.']);
+        }
+
+        $user->update([
+            'two_factor_secret' => encrypt($secretKey),
+            'two_factor_enabled' => true,
+        ]);
+
+        session()->forget('2fa_secret');
+
+        AuditLog::log('two_factor_enabled', ['severity' => 'high']);
+
+        return back()->with('success', 'Two-factor authentication has been enabled successfully!');
+    }
+
+    public function disableTwoFactor(Request $request)
+    {
+        $request->validate([
+            'password' => 'required',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->password, $user->password)) {
+            return back()->withErrors(['password' => 'Incorrect password.']);
+        }
+
+        $user->update([
+            'two_factor_secret' => null,
+            'two_factor_enabled' => false,
+        ]);
+
+        AuditLog::log('two_factor_disabled', ['severity' => 'high']);
+
+        return back()->with('success', 'Two-factor authentication has been disabled.');
     }
 }

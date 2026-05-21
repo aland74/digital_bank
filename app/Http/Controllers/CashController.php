@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\Card;
 use App\Models\Currency;
 use App\Models\Transaction;
 use App\Models\User;
@@ -33,6 +34,25 @@ class CashController extends Controller
         ]);
 
         $account = $request->user()->accounts()->findOrFail($request->account_id);
+
+        // Verify PIN against user's active card
+        $card = Card::where('user_id', $request->user()->id)
+            ->where('account_id', $account->id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$card) {
+            return back()->withErrors(['pin' => 'No active card found for this account.']);
+        }
+
+        if ($card->isFrozen()) {
+            return back()->withErrors(['pin' => 'Card is frozen due to too many failed PIN attempts. Please contact support.']);
+        }
+
+        if (!$card->verifyPin($request->pin)) {
+            $card->recordFailedPinAttempt();
+            return back()->withErrors(['pin' => 'Invalid PIN.'])->withInput();
+        }
 
         if ($account->balance < $request->amount) {
             return back()->withErrors(['amount' => 'Insufficient funds.']);

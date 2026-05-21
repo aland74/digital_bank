@@ -27,11 +27,11 @@
                 <div class="alert alert-success" style="margin-bottom:16px;text-align:left;">{{ session('success') }}</div>
             @endif
 
-            {{-- Dev: Show OTP for testing --}}
-            @if(isset($otp))
+            {{-- Dev: Show OTP for testing (debug mode only) --}}
+            @if(session('debug_otp'))
                 <div style="margin-bottom:16px;padding:12px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius);text-align:center;">
                     <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">🔧 {{ __('Test Mode — Your Code') }}</div>
-                    <div style="font-size:32px;font-weight:800;letter-spacing:8px;color:#22c55e;">{{ $otp }}</div>
+                    <div style="font-size:32px;font-weight:800;letter-spacing:8px;color:#22c55e;">{{ session('debug_otp') }}</div>
                 </div>
             @endif
             @if($errors->any())

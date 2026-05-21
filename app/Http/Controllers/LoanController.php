@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Loan;
 use App\Models\BankSetting;
 use App\Models\Notification;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class LoanController extends Controller
 {
@@ -151,40 +153,48 @@ class LoanController extends Controller
         ]);
 
         $amount = $validated['amount'];
-        $account = $loan->account;
 
-        if ($account->balance < $amount) {
-            return back()->with('error', 'Insufficient balance in the linked account to make this payment.');
+        try {
+        DB::transaction(function () use ($loan, $amount) {
+            // Lock the account row to prevent concurrent modifications
+            $account = \App\Models\Account::lockForUpdate()->findOrFail($loan->account_id);
+
+            if ($account->balance < $amount) {
+                throw new \RuntimeException('Insufficient balance in the linked account to make this payment.');
+            }
+
+            $balanceBefore = $account->balance;
+
+            // Deduct from account
+            $account->decrement('balance', $amount);
+            $account->decrement('available_balance', $amount);
+
+            // Update loan
+            $loan->decrement('remaining_balance', $amount);
+            $loan->increment('total_paid', $amount);
+
+            if ($loan->remaining_balance <= 0) {
+                $loan->update(['status' => 'completed']);
+            }
+
+            // Record transaction
+            Transaction::create([
+                'account_id' => $account->id,
+                'reference_number' => Transaction::generateReference(),
+                'type' => 'payment',
+                'amount' => $amount,
+                'currency' => $account->currency,
+                'balance_before' => $balanceBefore,
+                'balance_after' => $account->fresh()->balance,
+                'status' => 'completed',
+                'description' => "Loan Repayment - {$loan->loan_number}",
+                'channel' => 'web',
+                'completed_at' => now(),
+            ]);
+        });
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        // Deduct from account
-        $account->balance -= $amount;
-        $account->available_balance -= $amount;
-        $account->save();
-
-        // Update loan
-        $loan->remaining_balance -= $amount;
-        $loan->total_paid += $amount;
-        
-        if ($loan->remaining_balance <= 0) {
-            $loan->status = 'completed';
-        }
-        $loan->save();
-
-        // Record transaction
-        \App\Models\Transaction::create([
-            'account_id' => $account->id,
-            'reference_number' => \App\Models\Transaction::generateReference(),
-            'type' => 'payment',
-            'amount' => $amount,
-            'currency' => $account->currency,
-            'balance_before' => $account->balance + $amount,
-            'balance_after' => $account->balance,
-            'status' => 'completed',
-            'description' => "Loan Repayment - {$loan->loan_number}",
-            'channel' => 'web',
-            'completed_at' => now(),
-        ]);
 
         return back()->with('success', "Payment of $" . number_format($amount, 2) . " successful!");
     }

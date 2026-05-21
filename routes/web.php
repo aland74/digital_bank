@@ -64,7 +64,13 @@ Route::middleware('guest')->group(function () {
     // Registration OTP Verification Routes
     Route::get('/auth/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('auth.verify-otp');
     Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp'])->name('auth.verify-otp.submit');
-    Route::post('/auth/verify-otp/resend', [AuthController::class, 'resendOtp'])->name('auth.verify-otp.resend');
+    Route::post('/auth/verify-otp/resend', [AuthController::class, 'resendOtp'])
+        ->name('auth.verify-otp.resend')
+        ->middleware('throttle:3,1'); // 3 attempts per minute
+
+    // Two-Factor Authentication Verification
+    Route::get('/auth/2fa', [AuthController::class, 'show2faVerify'])->name('auth.2fa.verify');
+    Route::post('/auth/2fa', [AuthController::class, 'verify2fa'])->name('auth.2fa.verify.submit');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
@@ -138,6 +144,11 @@ Route::middleware(['auth', \App\Http\Middleware\CheckAccountStatus::class])->gro
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.update-password');
     Route::get('/profile/kyc', [ProfileController::class, 'showKycUpload'])->name('profile.kyc');
     Route::post('/profile/kyc', [ProfileController::class, 'uploadKyc'])->name('profile.kyc.upload');
+
+    // Two-Factor Authentication
+    Route::get('/profile/two-factor', [ProfileController::class, 'showTwoFactor'])->name('profile.two-factor');
+    Route::post('/profile/two-factor/enable', [ProfileController::class, 'enableTwoFactor'])->name('profile.two-factor.enable');
+    Route::post('/profile/two-factor/disable', [ProfileController::class, 'disableTwoFactor'])->name('profile.two-factor.disable');
     
     // Cash / ATM
     Route::get('/cash', [CashController::class, 'index'])->name('cash.index');
@@ -154,37 +165,45 @@ Route::middleware(['auth', \App\Http\Middleware\CheckAccountStatus::class])->gro
 
 // ── Admin Routes ────────────────────────────────────────────
 Route::middleware(['auth', \App\Http\Middleware\AdminMiddleware::class])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
-    Route::get('/users', [AdminController::class, 'users'])->name('users');
-    Route::get('/users/{user}', [AdminController::class, 'showUser'])->name('users.show');
-    Route::put('/users/{user}/status', [AdminController::class, 'updateUserStatus'])->name('users.update-status');
-    Route::get('/loans', [AdminController::class, 'pendingLoans'])->name('loans');
-    Route::post('/loans/{loan}/approve', [AdminController::class, 'approveLoan'])->name('loans.approve');
-    Route::post('/loans/{loan}/reject', [AdminController::class, 'rejectLoan'])->name('loans.reject');
-    Route::get('/kyc', [AdminController::class, 'kycDocuments'])->name('kyc');
-    Route::post('/kyc/{document}/verify', [AdminController::class, 'verifyKyc'])->name('kyc.verify');
-    Route::post('/kyc/{document}/reject', [AdminController::class, 'rejectKyc'])->name('kyc.reject');
+    // Dashboard
+    Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+
+    // Users
+    Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users');
+    Route::get('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('users.show');
+    Route::put('/users/{user}/status', [\App\Http\Controllers\Admin\UserController::class, 'updateStatus'])->name('users.update-status');
+
+    // Loans
+    Route::get('/loans', [\App\Http\Controllers\Admin\LoanController::class, 'index'])->name('loans');
+    Route::post('/loans/{loan}/approve', [\App\Http\Controllers\Admin\LoanController::class, 'approve'])->name('loans.approve');
+    Route::post('/loans/{loan}/reject', [\App\Http\Controllers\Admin\LoanController::class, 'reject'])->name('loans.reject');
+
+    // KYC
+    Route::get('/kyc', [\App\Http\Controllers\Admin\KycController::class, 'index'])->name('kyc');
+    Route::post('/kyc/{document}/verify', [\App\Http\Controllers\Admin\KycController::class, 'verify'])->name('kyc.verify');
+    Route::post('/kyc/{document}/reject', [\App\Http\Controllers\Admin\KycController::class, 'reject'])->name('kyc.reject');
+
     // Settings - all admins can view, only super admin can modify
-    Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
-    // Super Admin Only Routes
+    Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings');
     Route::middleware('super_admin')->group(function () {
-        Route::put('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
-        Route::get('/audit-logs', [AdminController::class, 'auditLogs'])->name('audit-logs');
+        Route::put('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
+        Route::get('/audit-logs', [\App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit-logs');
     });
-    Route::get('/pin-requests', [AdminController::class, 'pinRequests'])->name('pin-requests');
-    Route::post('/pin-requests/{pinRequest}/approve', [AdminController::class, 'approvePinRequest'])->name('pin-requests.approve');
-    Route::post('/pin-requests/{pinRequest}/reject', [AdminController::class, 'rejectPinRequest'])->name('pin-requests.reject');
-    
+
+    // PIN Requests
+    Route::get('/pin-requests', [\App\Http\Controllers\Admin\PinRequestController::class, 'index'])->name('pin-requests');
+    Route::post('/pin-requests/{pinRequest}/approve', [\App\Http\Controllers\Admin\PinRequestController::class, 'approve'])->name('pin-requests.approve');
+    Route::post('/pin-requests/{pinRequest}/reject', [\App\Http\Controllers\Admin\PinRequestController::class, 'reject'])->name('pin-requests.reject');
+
     // Admin Branch Cash Management
-    Route::get('/cash', [CashController::class, 'adminIndex'])->name('cash');
-    Route::get('/cash/accounts', [CashController::class, 'getUserAccounts'])->name('cash.accounts');
-    Route::post('/cash/deposit', [CashController::class, 'adminDeposit'])->name('cash.deposit');
-    Route::post('/cash/withdraw', [CashController::class, 'adminWithdraw'])->name('cash.withdraw');
+    Route::get('/cash', [\App\Http\Controllers\Admin\CashController::class, 'index'])->name('cash');
+    Route::post('/cash/deposit', [\App\Http\Controllers\Admin\CashController::class, 'deposit'])->name('cash.deposit');
+    Route::post('/cash/withdraw', [\App\Http\Controllers\Admin\CashController::class, 'withdraw'])->name('cash.withdraw');
 
     // Admin Support Tickets
-    Route::get('/support', [AdminController::class, 'supportTickets'])->name('support.index');
-    Route::get('/support/{ticket}', [AdminController::class, 'showSupportTicket'])->name('support.show');
-    Route::post('/support/{ticket}/reply', [AdminController::class, 'replySupportTicket'])->name('support.reply');
-    Route::put('/support/{ticket}/status', [AdminController::class, 'updateTicketStatus'])->name('support.update-status');
-    Route::post('/support/{ticket}/assign', [AdminController::class, 'assignTicket'])->name('support.assign');
+    Route::get('/support', [\App\Http\Controllers\Admin\SupportController::class, 'index'])->name('support.index');
+    Route::get('/support/{ticket}', [\App\Http\Controllers\Admin\SupportController::class, 'show'])->name('support.show');
+    Route::post('/support/{ticket}/reply', [\App\Http\Controllers\Admin\SupportController::class, 'reply'])->name('support.reply');
+    Route::put('/support/{ticket}/status', [\App\Http\Controllers\Admin\SupportController::class, 'updateStatus'])->name('support.update-status');
+    Route::post('/support/{ticket}/assign', [\App\Http\Controllers\Admin\SupportController::class, 'assign'])->name('support.assign');
 });

@@ -11,9 +11,14 @@
             <div class="card p-4">
                 <div class="flex-between">
                     <div><div class="font-medium">{{ __('Two-Factor Authentication') }}</div><div class="text-sm text-muted">{{ __('Extra layer of security for your account') }}</div></div>
-                    <span class="badge {{ $user->two_factor_enabled ? 'badge-success' : 'badge-danger' }}">
-                        {{ $user->two_factor_enabled ? __('Enabled') : __('Disabled') }}
-                    </span>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <span class="badge {{ $user->two_factor_enabled ? 'badge-success' : 'badge-danger' }}">
+                            {{ $user->two_factor_enabled ? __('Enabled') : __('Disabled') }}
+                        </span>
+                        <a href="{{ route('profile.two-factor') }}" class="btn btn-sm btn-secondary">
+                            {{ $user->two_factor_enabled ? __('Manage') : __('Enable') }}
+                        </a>
+                    </div>
                 </div>
             </div>
             <div class="card p-4">

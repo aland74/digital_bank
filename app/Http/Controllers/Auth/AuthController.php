@@ -125,6 +125,13 @@ class AuthController extends Controller
                     Log::warning("Login: Failed to log audit event: " . $e->getMessage());
                 }
 
+                // ── Step 6: Check 2FA for admin accounts ──
+                if ($user->isAdmin() && $user->two_factor_enabled) {
+                    session(['2fa_user_id' => $user->id]);
+                    Auth::logout();
+                    return redirect()->route('auth.2fa.verify');
+                }
+
                 if ($user->isAdmin()) {
                     return redirect()->intended(route('admin.dashboard'));
                 }
@@ -275,11 +282,16 @@ class AuthController extends Controller
             return redirect()->route('login');
         }
 
-        // Get the active OTP from cache for developer convenience
-        $cacheKey = 'otp_' . $user->id;
-        $otp = Cache::get($cacheKey);
+        // In debug mode only, show OTP as flash message for developer convenience
+        if (config('app.debug')) {
+            $cacheKey = 'otp_' . $user->id;
+            $otp = Cache::get($cacheKey);
+            if ($otp) {
+                session()->flash('debug_otp', $otp);
+            }
+        }
 
-        return view('auth.verify-otp', compact('user', 'otp'));
+        return view('auth.verify-otp', compact('user'));
     }
 
     public function verifyOtp(Request $request, OtpService $otpService, AccountService $accountService)
@@ -652,6 +664,81 @@ class AuthController extends Controller
 
         return redirect()->route('auth.verify-otp')
             ->with('success', 'Your Google profile has been connected! Please enter the 6-digit verification code sent to your email.');
+    }
+
+    // ── Two-Factor Authentication Verification ──────────────────
+
+    public function show2faVerify()
+    {
+        if (!session('2fa_user_id')) {
+            return redirect()->route('login');
+        }
+
+        return view('auth.verify-2fa');
+    }
+
+    public function verify2fa(Request $request)
+    {
+        $userId = session('2fa_user_id');
+        if (!$userId) {
+            return redirect()->route('login');
+        }
+
+        $request->validate([
+            'code' => 'required|string|size:6',
+        ]);
+
+        // Find user in HQ
+        $user = User::on(DistributedDatabaseService::getHqConnection())->find($userId);
+        if (!$user) {
+            // Try branches
+            foreach (DistributedDatabaseService::branchDisplayNames() as $branchKey => $branchName) {
+                try {
+                    $connection = DistributedDatabaseService::connectionForBranch($branchKey);
+                    $user = User::on($connection)->find($userId);
+                    if ($user) break;
+                } catch (\Exception $e) {}
+            }
+        }
+
+        if (!$user || !$user->two_factor_enabled || !$user->two_factor_secret) {
+            session()->forget('2fa_user_id');
+            return redirect()->route('login')->withErrors(['code' => 'Invalid session. Please try again.']);
+        }
+
+        $google2fa = new \PragmaRX\Google2FA\Google2FA();
+        $secret = decrypt($user->two_factor_secret);
+
+        if (!$google2fa->verifyKey($secret, $request->code)) {
+            return back()->withErrors(['code' => 'Invalid verification code. Please try again.']);
+        }
+
+        // Log the user in
+        Auth::login($user, session('2fa_remember', false));
+        $request->session()->regenerate();
+        session()->forget(['2fa_user_id', '2fa_remember']);
+
+        // Switch to branch DB
+        if (!empty($user->branch)) {
+            try {
+                $branchConn = DistributedDatabaseService::connectionForBranch($user->branch);
+                if (DistributedDatabaseService::isConnectionOnline($branchConn)) {
+                    DistributedDatabaseService::setActiveBranch($user->branch);
+                }
+            } catch (\Exception $e) {}
+        }
+
+        try {
+            $user->update([
+                'last_login_at' => now(),
+                'last_login_ip' => $request->ip(),
+                'failed_login_attempts' => 0,
+                'locked_until' => null,
+            ]);
+            AuditLog::log('login', ['severity' => 'low', 'details' => '2FA verified']);
+        } catch (\Exception $e) {}
+
+        return redirect()->intended(route('admin.dashboard'));
     }
 
     public function logout(Request $request)

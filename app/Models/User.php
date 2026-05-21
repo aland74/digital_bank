@@ -15,6 +15,18 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, SyncsWithHQ;
 
+    // ── Role Constants ──────────────────────────────────────────
+    const ROLE_CUSTOMER = 'customer';
+    const ROLE_ADMIN = 'admin';
+    const ROLE_SUPER_ADMIN = 'super_admin';
+
+    // ── Status Constants ────────────────────────────────────────
+    const STATUS_ACTIVE = 'active';
+    const STATUS_INACTIVE = 'inactive';
+    const STATUS_SUSPENDED = 'suspended';
+    const STATUS_FROZEN = 'frozen';
+    const STATUS_PENDING_VERIFICATION = 'pending_verification';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -140,12 +152,12 @@ class User extends Authenticatable
 
     public function scopeAdmins($query)
     {
-        return $query->whereIn('role', ['admin', 'super_admin']);
+        return $query->whereIn('role', [self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN]);
     }
 
     public function scopeCustomers($query)
     {
-        return $query->where('role', 'customer');
+        return $query->where('role', self::ROLE_CUSTOMER);
     }
 
     public function scopeOfBranch($query, string $branch)
@@ -157,17 +169,17 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return in_array($this->role, ['admin', 'super_admin']);
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN]);
     }
 
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'super_admin';
+        return $this->role === self::ROLE_SUPER_ADMIN;
     }
 
     public function isActive(): bool
     {
-        return $this->status === 'active';
+        return $this->status === self::STATUS_ACTIVE;
     }
 
     public function isLocked(): bool

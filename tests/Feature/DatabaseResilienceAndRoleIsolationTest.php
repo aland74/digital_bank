@@ -94,19 +94,20 @@ class DatabaseResilienceAndRoleIsolationTest extends TestCase
             'branch' => 'sulaimaniyah',
         ]);
 
-        // 2. Test accessing /admin/settings and /admin/audit-logs as Regular Admin
+        // 2. Test accessing /admin/settings as Regular Admin (view only - allowed)
         $response = $this->actingAs($regularAdmin)->get('/admin/settings');
-        $response->assertStatus(403);
+        $response->assertStatus(200); // All admins can view settings
 
+        // 3. Test accessing /admin/audit-logs as Regular Admin (super_admin only)
         $response = $this->actingAs($regularAdmin)->get('/admin/audit-logs');
         $response->assertStatus(403);
 
-        // 3. Test accessing as Super Admin
+        // 4. Test accessing as Super Admin
         $response = $this->actingAs($superAdmin)->get('/admin/settings');
-        $this->assertNotEquals(403, $response->getStatusCode());
+        $response->assertStatus(200);
 
         $response = $this->actingAs($superAdmin)->get('/admin/audit-logs');
-        $this->assertNotEquals(403, $response->getStatusCode());
+        $response->assertStatus(200);
     }
 
     /**

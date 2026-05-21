@@ -7,6 +7,7 @@ use App\Models\PendingTransfer;
 use App\Models\Notification;
 use App\Models\AuditLog;
 use App\Models\BankSetting;
+use App\Services\AccountService;
 use App\Services\DistributedDatabaseService;
 use App\Services\ExchangeRateService;
 use App\Services\TransactionService;
@@ -329,15 +330,10 @@ class TransferController extends Controller
 
         try {
             // Load sender account — try sender's branch first, fall back to HQ
-            $senderBranch = DistributedDatabaseService::findUserBranchById($pendingTransfer->sender_user_id);
-            $senderConnection = $senderBranch
-                ? DistributedDatabaseService::connectionForBranch($senderBranch)
-                : DistributedDatabaseService::getHqConnection();
-            $senderAccount = Account::on($senderConnection)->find($pendingTransfer->sender_account_id);
-            if (!$senderAccount) {
-                $senderAccount = Account::on(DistributedDatabaseService::getHqConnection())
-                    ->findOrFail($pendingTransfer->sender_account_id);
-            }
+            $senderAccount = AccountService::findSenderAccount(
+                $pendingTransfer->sender_account_id,
+                $pendingTransfer->sender_user_id
+            );
 
             // Load receiver account from current branch
             $receiverAccount = Account::findOrFail($pendingTransfer->receiver_account_id);
@@ -400,15 +396,10 @@ class TransferController extends Controller
 
         try {
             // Load sender account — try sender's branch first, fall back to HQ
-            $senderBranch = DistributedDatabaseService::findUserBranchById($pendingTransfer->sender_user_id);
-            $senderConnection = $senderBranch
-                ? DistributedDatabaseService::connectionForBranch($senderBranch)
-                : DistributedDatabaseService::getHqConnection();
-            $senderAccount = Account::on($senderConnection)->find($pendingTransfer->sender_account_id);
-            if (!$senderAccount) {
-                $senderAccount = Account::on(DistributedDatabaseService::getHqConnection())
-                    ->findOrFail($pendingTransfer->sender_account_id);
-            }
+            $senderAccount = AccountService::findSenderAccount(
+                $pendingTransfer->sender_account_id,
+                $pendingTransfer->sender_user_id
+            );
 
             // Release held funds
             $transactionService->releaseHold($senderAccount, $pendingTransfer->amount);
