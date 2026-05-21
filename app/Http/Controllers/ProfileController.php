@@ -142,13 +142,13 @@ class ProfileController extends Controller
     public function showTwoFactor(Request $request)
     {
         $user = $request->user();
-        $qrCodeSvg = null;
+        $qrCodeUrl = null;
         $secretKey = null;
 
         if (!$user->two_factor_enabled) {
             $google2fa = new Google2FA();
             $secretKey = $google2fa->generateSecretKey();
-            $qrCodeSvg = $google2fa->getQRCodeSvg(
+            $qrCodeUrl = $google2fa->getQRCodeUrl(
                 config('app.name'),
                 $user->email,
                 $secretKey
@@ -158,7 +158,7 @@ class ProfileController extends Controller
             session(['2fa_secret' => $secretKey]);
         }
 
-        return view('profile.two-factor', compact('user', 'qrCodeSvg', 'secretKey'));
+        return view('profile.two-factor', compact('user', 'qrCodeUrl', 'secretKey'));
     }
 
     public function enableTwoFactor(Request $request)

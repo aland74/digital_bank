@@ -49,7 +49,7 @@
 
                     {{-- QR Code --}}
                     <div style="text-align:center;padding:24px;background:var(--bg-page);border-radius:var(--radius-lg);margin-bottom:24px;">
-                        {!! $qrCodeSvg !!}
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($qrCodeUrl) }}" alt="QR Code" style="width: 200px; height: 200px; border-radius: 8px;">
                     </div>
 
                     {{-- Secret Key --}}
