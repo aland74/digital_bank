@@ -22,8 +22,26 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">{{ __('Loan Amount ($1,000 — $1,000,000)') }}</label>
-                <input type="number" name="amount" class="form-input" placeholder="50000" min="1000" max="1000000" step="100" value="{{ old('amount') }}" required>
+                <label class="form-label">{{ __('Linked Card (Required)') }}</label>
+                <select name="card_id" class="form-select" required id="loan-card-select" onchange="updateLoanCurrency()">
+                    @foreach($cards as $card)
+                        @php
+                            $cardCur = $card->account ? \App\Models\Currency::where('code', $card->account->currency)->first() : null;
+                            $cardSym = $cardCur?->symbol ?? '$';
+                            $cardDec = $cardCur?->decimal_places ?? 2;
+                        @endphp
+                        <option value="{{ $card->id }}" data-currency="{{ $card->account->currency ?? 'USD' }}" data-symbol="{{ $cardSym }}" data-decimals="{{ $cardDec }}">
+                            **** **** **** {{ $card->card_number_last4 }} — {{ ucfirst($card->card_brand) }} ({{ $card->account->currency ?? 'USD' }})
+                        </option>
+                    @endforeach
+                </select>
+                <small class="text-muted" style="display:block; margin-top:4px;">{{ __('The loan will be disbursed to the account linked to this card, and monthly payments will be automatically deducted from it.') }}</small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" id="loan-amount-label">{{ __('Loan Amount') }}</label>
+                <input type="number" name="amount" class="form-input" placeholder="50000" min="1000" max="1000000" step="100" value="{{ old('amount') }}" required id="loan-amount-input">
+                <div class="form-hint" id="loan-amount-hint">{{ __('Select a card to see currency details.') }}</div>
             </div>
 
             <div class="form-group">
@@ -33,18 +51,6 @@
                         <option value="{{ $months }}">{{ $months }} {{ __('months') }} ({{ round($months/12, 1) }} {{ __('years') }})</option>
                     @endforeach
                 </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">{{ __('Linked Card (Required)') }}</label>
-                <select name="card_id" class="form-select" required>
-                    @foreach($cards as $card)
-                        <option value="{{ $card->id }}">
-                            **** **** **** {{ $card->card_number_last4 }} — {{ ucfirst($card->card_brand) }} ({{ ucfirst($card->card_type) }})
-                        </option>
-                    @endforeach
-                </select>
-                <small class="text-muted" style="display:block; margin-top:4px;">{{ __('The loan will be disbursed to the account linked to this card, and monthly payments will be automatically deducted from it.') }}</small>
             </div>
 
             <div class="form-group">
@@ -62,4 +68,39 @@
         </form>
     </div>
 </div>
+<script>
+function updateLoanCurrency() {
+    const select = document.getElementById('loan-card-select');
+    const option = select.options[select.selectedIndex];
+    const label = document.getElementById('loan-amount-label');
+    const hint = document.getElementById('loan-amount-hint');
+
+    if (option.value) {
+        const currency = option.dataset.currency;
+        const symbol = option.dataset.symbol;
+        label.textContent = '{{ __("Loan Amount") }} (' + currency + ')';
+        if (currency === 'IQD') {
+            hint.textContent = '{{ __("Amount in") }} IQD. {{ __("Minimum") }} 1,000,000 IQD {{ __("— Maximum") }} 1,000,000,000 IQD';
+            document.getElementById('loan-amount-input').min = 1000000;
+            document.getElementById('loan-amount-input').max = 1000000000;
+            document.getElementById('loan-amount-input').step = 100000;
+            document.getElementById('loan-amount-input').placeholder = '50000000';
+        } else {
+            hint.textContent = '{{ __("Amount in") }} USD. {{ __("Minimum") }} $1,000 {{ __("— Maximum") }} $1,000,000';
+            document.getElementById('loan-amount-input').min = 1000;
+            document.getElementById('loan-amount-input').max = 1000000;
+            document.getElementById('loan-amount-input').step = 100;
+            document.getElementById('loan-amount-input').placeholder = '50000';
+        }
+    } else {
+        label.textContent = '{{ __("Loan Amount") }}';
+        hint.textContent = '{{ __("Select a card to see currency details.") }}';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateLoanCurrency();
+});
+</script>
 @endsection

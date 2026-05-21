@@ -198,6 +198,7 @@ Route::middleware(['auth', \App\Http\Middleware\AdminMiddleware::class])->prefix
 
     // Admin Branch Cash Management
     Route::get('/cash', [\App\Http\Controllers\Admin\CashController::class, 'index'])->name('cash');
+    Route::get('/cash/accounts', [\App\Http\Controllers\Admin\CashController::class, 'getUserAccounts'])->name('cash.accounts');
     Route::post('/cash/deposit', [\App\Http\Controllers\Admin\CashController::class, 'deposit'])->name('cash.deposit');
     Route::post('/cash/withdraw', [\App\Http\Controllers\Admin\CashController::class, 'withdraw'])->name('cash.withdraw');
 

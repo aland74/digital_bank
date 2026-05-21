@@ -44,6 +44,32 @@ class CashController extends Controller
     }
 
     /**
+     * AJAX: Get accounts for a specific user (for branch cash forms).
+     */
+    public function getUserAccounts(Request $request)
+    {
+        $request->validate(['user_id' => 'required|exists:users,id']);
+
+        $accounts = Account::where('user_id', $request->user_id)
+            ->where('status', 'active')
+            ->get()
+            ->map(function ($acc) {
+                $cur = Currency::where('code', $acc->currency)->first();
+                $sym = $cur?->symbol ?? $acc->currency;
+                $dec = $cur?->decimal_places ?? 2;
+                return [
+                    'id' => $acc->id,
+                    'currency' => $acc->currency,
+                    'symbol' => $sym,
+                    'decimals' => $dec,
+                    'text' => ucfirst($acc->account_type) . ' — ' . $acc->account_number . ' (' . $sym . ' ' . number_format($acc->available_balance, $dec) . ')',
+                ];
+            });
+
+        return response()->json($accounts);
+    }
+
+    /**
      * Process a teller deposit (cash in).
      */
     public function deposit(Request $request)

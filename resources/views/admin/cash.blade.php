@@ -107,9 +107,9 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">{{ __('Amount') }}</label>
-                <input type="number" name="amount" class="form-input" min="1" step="0.01" required placeholder="e.g. 500">
-                <p class="form-hint">{{ __('Enter amount in the account\'s currency (USD or IQD)') }}</p>
+                <label class="form-label" id="deposit-amount-label">{{ __('Amount') }}</label>
+                <input type="number" name="amount" class="form-input" id="deposit-amount-input" min="1" step="0.01" required placeholder="e.g. 500">
+                <p class="form-hint" id="deposit-amount-hint">{{ __('Select an account to see currency details.') }}</p>
             </div>
 
             <button type="submit" class="btn btn-success btn-lg w-full" onclick="return confirm('{{ __('Confirm cash deposit?') }}')">
@@ -139,9 +139,9 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">{{ __('Amount') }}</label>
-                <input type="number" name="amount" class="form-input" min="1" step="0.01" required placeholder="e.g. 200">
-                <p class="form-hint">{{ __('Enter amount in the account\'s currency (USD or IQD)') }}</p>
+                <label class="form-label" id="withdraw-amount-label">{{ __('Amount') }}</label>
+                <input type="number" name="amount" class="form-input" id="withdraw-amount-input" min="1" step="0.01" required placeholder="e.g. 200">
+                <p class="form-hint" id="withdraw-amount-hint">{{ __('Select an account to see currency details.') }}</p>
             </div>
 
             <button type="submit" class="btn btn-danger btn-lg w-full" onclick="return confirm('{{ __('Confirm cash withdrawal?') }}')">
@@ -152,6 +152,9 @@
 </div>
 
 <script>
+    // Store accounts data for currency lookup
+    let userAccounts = [];
+
     // Fetch user accounts via AJAX when customer is selected
     function selectCustomer(userId, name, email) {
         // Set both forms
@@ -164,6 +167,7 @@
         fetch('/admin/cash/accounts?user_id=' + userId)
             .then(r => r.json())
             .then(accounts => {
+                userAccounts = accounts;
                 ['deposit-account-select', 'withdraw-account-select'].forEach(selectId => {
                     const select = document.getElementById(selectId);
                     select.innerHTML = '<option value="">{{ __("Select an account...") }}</option>';
@@ -172,6 +176,9 @@
                         accounts.forEach(acc => {
                             const opt = document.createElement('option');
                             opt.value = acc.id;
+                            opt.dataset.currency = acc.currency;
+                            opt.dataset.symbol = acc.symbol;
+                            opt.dataset.decimals = acc.decimals;
                             opt.textContent = acc.text;
                             select.appendChild(opt);
                         });
@@ -179,6 +186,14 @@
                         select.disabled = true;
                         select.innerHTML = '<option value="">{{ __("No accounts found") }}</option>';
                     }
+                });
+
+                // Add change listeners to update amount input
+                document.getElementById('deposit-account-select').addEventListener('change', function() {
+                    updateCashAmount('deposit', this);
+                });
+                document.getElementById('withdraw-account-select').addEventListener('change', function() {
+                    updateCashAmount('withdraw', this);
                 });
             })
             .catch(() => {
@@ -191,6 +206,32 @@
 
         // Scroll to forms
         document.querySelector('.grid-2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Update amount input based on selected account currency
+    function updateCashAmount(type, select) {
+        const option = select.options[select.selectedIndex];
+        const label = document.getElementById(type + '-amount-label');
+        const hint = document.getElementById(type + '-amount-hint');
+        const input = document.getElementById(type + '-amount-input');
+
+        if (option.value) {
+            const currency = option.dataset.currency;
+            const symbol = option.dataset.symbol;
+            const decimals = parseInt(option.dataset.decimals);
+
+            label.textContent = '{{ __("Amount") }} (' + currency + ')';
+            hint.textContent = '{{ __("Amount in") }} ' + currency + '. {{ __("Minimum") }}: ' + symbol + (currency === 'IQD' ? '1' : '0.01');
+
+            input.step = decimals === 0 ? '1' : '0.01';
+            input.min = decimals === 0 ? '1' : '0.01';
+            input.placeholder = currency === 'IQD' ? 'e.g. 500000' : 'e.g. 500';
+        } else {
+            label.textContent = '{{ __("Amount") }}';
+            hint.textContent = '{{ __("Select an account to see currency details.") }}';
+            input.step = '0.01';
+            input.min = '1';
+        }
     }
 </script>
 @endsection

@@ -43,13 +43,26 @@ class LoanController extends Controller
     {
         $validated = $request->validate([
             'loan_type' => 'required|in:personal,home,auto,business,education',
-            'amount' => 'required|numeric|min:1000|max:1000000',
+            'amount' => 'required|numeric|min:1|max:1000000000',
             'term_months' => 'required|integer|min:6|max:360',
             'card_id' => 'required|exists:cards,id',
             'purpose' => 'nullable|string|max:500',
         ]);
 
         $card = $request->user()->cards()->findOrFail($validated['card_id']);
+        $account = $card->account;
+
+        // Validate amount based on currency
+        $currency = $account->currency ?? 'USD';
+        if ($currency === 'IQD') {
+            if ($validated['amount'] < 1000000 || $validated['amount'] > 1000000000) {
+                return back()->withErrors(['amount' => 'IQD loan amount must be between 1,000,000 and 1,000,000,000 IQD.'])->withInput();
+            }
+        } else {
+            if ($validated['amount'] < 1000 || $validated['amount'] > 1000000) {
+                return back()->withErrors(['amount' => 'USD loan amount must be between $1,000 and $1,000,000.'])->withInput();
+            }
+        }
 
         // ── Bank Reserve Check ─────────────────────────────────
         $reserveHealth = BankSetting::reserveHealth();
