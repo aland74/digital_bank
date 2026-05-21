@@ -21,11 +21,27 @@ class CashController extends Controller
     {
         $branch = auth()->user()->branch;
 
-        // Get all accounts for the admin's branch
-        $accounts = Account::whereHas('user', function ($q) use ($branch) {
-            $q->where('branch', $branch)->where('role', 'customer');
-        })->with('user')->get();
+        // Search customers
+        $users = User::where('branch', $branch)
+            ->where('role', 'customer')
+            ->with('accounts')
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $search = $request->search;
+                $q->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('national_id', 'like', "%{$search}%")
+                        ->orWhereHas('accounts', function ($aq) use ($search) {
+                            $aq->where('account_number', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->orderBy('name')
+            ->paginate(15)
+            ->withQueryString();
 
+        // Today's stats for this branch
         $todayTransactions = Transaction::whereHas('account.user', function ($q) use ($branch) {
             $q->where('branch', $branch);
         })
@@ -35,12 +51,24 @@ class CashController extends Controller
             ->get();
 
         $stats = [
-            'deposits_today' => $todayTransactions->where('type', 'deposit')->sum('amount'),
-            'withdrawals_today' => $todayTransactions->where('type', 'withdrawal')->sum('amount'),
+            'deposits_usd' => $todayTransactions->where('type', 'deposit')->where('currency', 'USD')->sum('amount'),
+            'deposits_iqd' => $todayTransactions->where('type', 'deposit')->where('currency', 'IQD')->sum('amount'),
+            'withdrawals_usd' => $todayTransactions->where('type', 'withdrawal')->where('currency', 'USD')->sum('amount'),
+            'withdrawals_iqd' => $todayTransactions->where('type', 'withdrawal')->where('currency', 'IQD')->sum('amount'),
             'total_transactions' => $todayTransactions->count(),
         ];
 
-        return view('admin.cash', compact('accounts', 'todayTransactions', 'stats'));
+        // Recent transactions (last 20)
+        $recentTransactions = Transaction::whereHas('account.user', function ($q) use ($branch) {
+            $q->where('branch', $branch);
+        })
+            ->where('channel', 'branch')
+            ->with(['account.user'])
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        return view('admin.cash', compact('users', 'stats', 'recentTransactions'));
     }
 
     /**
