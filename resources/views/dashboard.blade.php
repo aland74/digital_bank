@@ -4,15 +4,12 @@
 @section('page-subtitle', __('Welcome back') . ', ' . auth()->user()->name . ' · ' . __('Branch') . ': ' . auth()->user()->branch_display_name)
 
 @php
-    $currencySymbol = $viewCurrency->symbol ?? '$';
-    $currencyDecimals = $viewCurrency->decimal_places ?? 2;
-    $currencyCode = $viewCurrency->code ?? 'USD';
+    $usdSymbol = '$';
+    $iqdSymbol = 'د.ع';
 @endphp
 
-<script>window.__currencySymbol = '{{ $currencySymbol }}';</script>
-
 @section('content')
-{{-- Currency Switcher + Exchange Rate --}}
+{{-- Exchange Rate Info --}}
 <div class="card card-body p-4 mb-4 animate-fade-in-up" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(168, 85, 247, 0.1));">
     <div class="flex-between">
         <div class="flex align-items-center flex-gap-2">
@@ -22,58 +19,33 @@
                 <div class="text-muted text-xs">{{ $exchangeRate['formatted'] }}</div>
             </div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;">
-            <div class="text-right">
-                <div style="font-size: 13px; color: var(--info); font-weight: 500;">{{ $exchangeRate['inverse_formatted'] }}</div>
-                <div class="text-muted text-xs">{{ __('Updated') }}: {{ $exchangeRate['updated_at'] }}</div>
-            </div>
-            <div style="display:flex;background:var(--bg-secondary);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);">
-                @foreach($currencies as $cur)
-                    <a href="?currency={{ $cur->code }}" style="padding:6px 14px;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.2s;{{ $cur->code === $currencyCode ? 'background:var(--primary);color:white;' : 'color:var(--text-muted);' }}">
-                        {{ $cur->symbol }} {{ $cur->code }}
-                    </a>
-                @endforeach
-            </div>
+        <div class="text-right">
+            <div style="font-size: 13px; color: var(--info); font-weight: 500;">{{ $exchangeRate['inverse_formatted'] }}</div>
+            <div class="text-muted text-xs">{{ __('Updated') }}: {{ $exchangeRate['updated_at'] }}</div>
         </div>
     </div>
 </div>
 
-{{-- Balance Cards --}}
+{{-- Dual Currency Balance Cards --}}
 <div class="stats-grid animate-fade-in-up">
-    <div class="stat-card">
-        <div class="stat-icon cyan">💰</div>
-        <div class="stat-value" data-count-to="{{ $totalBalance }}" data-prefix="{{ $currencySymbol }} " data-decimals="{{ $currencyDecimals }}">{{ $currencySymbol }}0</div>
-        <div class="stat-label">{{ __('Total Balance') }} ({{ $currencyCode }})</div>
+    {{-- USD Balance --}}
+    <div class="stat-card" style="border-left: 3px solid #3b82f6;">
+        <div class="stat-icon cyan">💵</div>
+        <div class="stat-value" data-count-to="{{ $usdBalance }}" data-prefix="$ " data-decimals="2">$0</div>
+        <div class="stat-label">{{ __('USD Balance') }}</div>
+        <div class="text-xs text-muted" style="margin-top:4px;">{{ __('Available') }}: ${{ number_format($usdAvailable, 2) }}</div>
+    </div>
+    {{-- IQD Balance --}}
+    <div class="stat-card" style="border-left: 3px solid #f59e0b;">
+        <div class="stat-icon orange">💰</div>
+        <div class="stat-value" data-count-to="{{ $iqdBalance }}" data-prefix="د.ع " data-decimals="0">د.ع0</div>
+        <div class="stat-label">{{ __('IQD Balance') }}</div>
+        <div class="text-xs text-muted" style="margin-top:4px;">{{ __('Available') }}: د.ع{{ number_format($iqdAvailable, 0) }}</div>
     </div>
     <div class="stat-card">
         <div class="stat-icon green">📥</div>
-        <div class="stat-value" data-count-to="{{ $monthlyData[5]['income'] ?? 0 }}" data-prefix="{{ $currencySymbol }} " data-decimals="{{ $currencyDecimals }}">{{ $currencySymbol }}0</div>
-        <div class="stat-label">{{ __('Monthly Income') }}</div>
-        @php
-            $prevIncome = $monthlyData[4]['income'] ?? 0;
-            $curIncome = $monthlyData[5]['income'] ?? 0;
-            $incomeChange = $prevIncome > 0 ? round((($curIncome - $prevIncome) / $prevIncome) * 100, 1) : 0;
-        @endphp
-        @if($incomeChange != 0)
-            <span class="stat-change {{ $incomeChange > 0 ? 'positive' : 'negative' }}">
-                {{ $incomeChange > 0 ? '↑' : '↓' }} {{ abs($incomeChange) }}%
-            </span>
-        @endif
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon red">📤</div>
-        <div class="stat-value" data-count-to="{{ $monthlyData[5]['expense'] ?? 0 }}" data-prefix="{{ $currencySymbol }} " data-decimals="{{ $currencyDecimals }}">{{ $currencySymbol }}0</div>
-        <div class="stat-label">{{ __('Monthly Expenses') }}</div>
-        @php
-            $prevExpense = $monthlyData[4]['expense'] ?? 0;
-            $curExpense = $monthlyData[5]['expense'] ?? 0;
-            $expenseChange = $prevExpense > 0 ? round((($curExpense - $prevExpense) / $prevExpense) * 100, 1) : 0;
-        @endphp
-        @if($expenseChange != 0)
-            <span class="stat-change {{ $expenseChange > 0 ? 'negative' : 'positive' }}">
-                {{ $expenseChange > 0 ? '↑' : '↓' }} {{ abs($expenseChange) }}%
-            </span>
-        @endif
+        <div class="stat-value">{{ $accounts->count() }}</div>
+        <div class="stat-label">{{ __('Active Accounts') }}</div>
     </div>
     <div class="stat-card">
         <div class="stat-icon purple">💳</div>
@@ -84,11 +56,6 @@
         <div class="stat-icon orange">📈</div>
         <div class="stat-value">{{ $activeLoans }}</div>
         <div class="stat-label">{{ __('Active Loans') }}</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon blue">🏦</div>
-        <div class="stat-value">{{ $accounts->count() }}</div>
-        <div class="stat-label">{{ __('Active Accounts') }}</div>
     </div>
 </div>
 
@@ -122,25 +89,25 @@
 </div>
 
 <div class="grid-2 grid-align-start">
-    {{-- Income vs Expenses Chart --}}
+    {{-- Income vs Expenses Chart (USD) --}}
     <div class="card card-body p-6 animate-fade-in-up delay-200">
         <div class="section-header">
-            <h2 class="section-title">{{ __('Income vs Expenses') }}</h2>
-            <span class="text-sm text-muted">{{ __('Last 6 months') }} · {{ $currencyCode }}</span>
+            <h2 class="section-title">{{ __('Income vs Expenses') }} (USD)</h2>
+            <span class="text-sm text-muted">{{ __('Last 6 months') }}</span>
         </div>
         <canvas data-chart='@json($monthlyData)' style="width:100%;height:260px;"></canvas>
     </div>
 
-    {{-- Spending Categories --}}
+    {{-- Spending Categories (USD) --}}
     <div class="card card-body p-6 animate-fade-in-up delay-300">
         <div class="section-header">
-            <h2 class="section-title">{{ __('Spending Categories') }}</h2>
-            <span class="text-sm text-muted">{{ __('This month') }} · {{ $currencyCode }}</span>
+            <h2 class="section-title">{{ __('Spending Categories') }} (USD)</h2>
+            <span class="text-sm text-muted">{{ __('This month') }}</span>
         </div>
         <div class="donut-chart-container flex-column">
             <canvas data-donut='@json($categoryData)' style="width:200px;height:200px;"></canvas>
             <div class="donut-center-text">
-                <div class="donut-center-value">{{ $currencySymbol }} {{ number_format(collect($categoryData)->sum('value'), 0) }}</div>
+                <div class="donut-center-value">${{ number_format(collect($categoryData)->sum('value'), 0) }}</div>
                 <div class="donut-center-label">{{ __('Total Spent') }}</div>
             </div>
             <div class="donut-legend flex-justify-center"></div>

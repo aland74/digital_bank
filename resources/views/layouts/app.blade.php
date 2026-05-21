@@ -154,13 +154,6 @@
                 </div>
             </div>
             <div class="topbar-right">
-                {{-- Currency Switcher --}}
-                @php $currentCurrency = session('view_currency', 'USD'); @endphp
-                <div style="display:flex;background:var(--bg-secondary);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);">
-                    <a href="{{ route('currency.switch', 'USD') }}" style="padding:4px 10px;font-size:11px;font-weight:600;text-decoration:none;transition:all 0.2s;{{ $currentCurrency === 'USD' ? 'background:var(--primary);color:white;' : 'color:var(--text-muted);' }}">$ USD</a>
-                    <a href="{{ route('currency.switch', 'IQD') }}" style="padding:4px 10px;font-size:11px;font-weight:600;text-decoration:none;transition:all 0.2s;{{ $currentCurrency === 'IQD' ? 'background:var(--primary);color:white;' : 'color:var(--text-muted);' }}">د.ع IQD</a>
-                </div>
-
                 {{-- Language Switcher --}}
                 <div class="lang-switcher">
                     <a href="{{ route('lang.switch', 'en') }}" class="lang-btn {{ app()->getLocale() === 'en' ? 'active' : '' }}">EN</a>
