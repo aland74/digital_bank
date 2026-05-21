@@ -1,10 +1,9 @@
 @extends('layouts.app')
-@section('title', 'Pending Transfers')
-@section('page-title', 'Pending Transfers')
-@section('page-subtitle', 'Accept or decline incoming transfers')
+@section('title', __('Pending Transfers'))
+@section('page-title', '⏳ ' . __('Pending Transfers'))
+@section('page-subtitle', __('Accept or decline incoming transfers'))
 
 @section('content')
-{{-- Helper: resolve user from HQ if not on local branch --}}
 @php
     $resolveUser = function ($localUser, int $userId) {
         if ($localUser) return $localUser;
@@ -14,190 +13,301 @@
     $resolveAccount = function ($localAccount, int $accountId) {
         if ($localAccount) return $localAccount;
         return \App\Models\Account::on(\App\Services\DistributedDatabaseService::getHqConnection())->find($accountId)
-            ?? (object)['account_number' => 'N/A'];
+            ?? (object)['account_number' => 'N/A', 'currency' => 'USD'];
     };
+
+    $pendingIncoming = $incoming->where('status', 'pending')->filter(fn($t) => $t->expires_at->isFuture());
+    $expiredIncoming = $incoming->where('status', 'pending')->filter(fn($t) => $t->expires_at->isPast());
+    $processedIncoming = $incoming->where('status', '!=', 'pending');
+
+    $pendingOutgoing = $outgoing->where('status', 'pending')->filter(fn($t) => $t->expires_at->isFuture());
+    $expiredOutgoing = $outgoing->where('status', 'pending')->filter(fn($t) => $t->expires_at->isPast());
+    $processedOutgoing = $outgoing->where('status', '!=', 'pending');
+
+    $pendingTotal = $pendingIncoming->count() + $pendingOutgoing->count();
 @endphp
 
-{{-- Tab Navigation --}}
-@php
-    $pendingIncoming = $incoming->where('status', 'pending')->filter(fn($t) => $t->expires_at->isFuture());
-    $pendingTotal = $pendingIncoming->count() + $outgoing->where('status', 'pending')->filter(fn($t) => $t->expires_at->isFuture())->count();
-@endphp
-<div class="filter-tabs animate-fade-in-up" style="margin-bottom: 20px;">
-    <a href="{{ route('transfers.create') }}" class="filter-tab">
-        💸 {{ __('New Transfer') }}
-    </a>
+{{-- Tabs --}}
+<div class="filter-tabs mb-6 animate-fade-in-up">
+    <a href="{{ route('transfers.create') }}" class="filter-tab">💸 {{ __('New Transfer') }}</a>
     <a href="{{ route('transfers.pending') }}" class="filter-tab active">
-        ⏳ {{ __('Pending Transfers') }}
+        ⏳ {{ __('Pending') }}
         @if($pendingTotal > 0)
-            <span class="badge badge-info" style="margin-left: 6px; font-size: 10px;">{{ $pendingTotal }}</span>
+            <span class="badge badge-info" style="margin-left: 6px;">{{ $pendingTotal }}</span>
         @endif
     </a>
 </div>
 
-{{-- Incoming Transfers --}}
-<div class="card p-6 mb-6 animate-fade-in-up">
-    <h2 class="section-title mb-4">📨 {{ __('Incoming Transfers') }}</h2>
-
-    @if($pendingIncoming->count() > 0)
-        @foreach($pendingIncoming as $transfer)
-            @php
-                $cur = \App\Models\Currency::where('code', $transfer->currency)->first();
-                $sym = $cur?->symbol ?? $transfer->currency;
-                $dec = $cur?->decimal_places ?? 2;
-                $sender = $resolveUser($transfer->senderUser, $transfer->sender_user_id);
-                $senderAcc = $resolveAccount($transfer->senderAccount, $transfer->sender_account_id);
-            @endphp
-            <div class="card p-4 mb-3" style="border-left:3px solid #7c3aed;">
-                <div class="flex-between mb-3">
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <div class="avatar-initials">
-                            {{ $sender->initials ?? strtoupper(substr($sender->name, 0, 2)) }}
-                        </div>
-                        <div>
-                            <div class="font-semibold">{{ $sender->name }}</div>
-                            <div class="text-xs text-muted">{{ $senderAcc->account_number }}</div>
-                        </div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:24px;font-weight:700;color:var(--success);">+{{ $sym }} {{ number_format($transfer->amount, $dec) }}</div>
-                        <div class="text-xs text-muted">{{ __('Expires') }} {{ $transfer->time_remaining }}</div>
-                    </div>
-                </div>
-
-                @if($transfer->description)
-                    <div class="card p-3 mb-3" style="font-size:13px;">
-                        <span class="text-muted">Note:</span> {{ $transfer->description }}
-                    </div>
-                @endif
-
-                @php $recvAcc = $resolveAccount($transfer->receiverAccount, $transfer->receiver_account_id); @endphp
-                <div class="flex-between text-xs text-muted mb-3">
-                    <span>To: {{ $recvAcc->account_number }}</span>
-                    <span>Ref: {{ $transfer->reference_number }}</span>
-                </div>
-                <div class="text-xs text-muted mb-3">
-                    Sent: {{ $transfer->created_at->format('M d, Y h:i A') }}
-                </div>
-
-                <div style="display:flex;gap:8px;">
-                    <form method="POST" action="{{ route('transfers.accept', $transfer) }}" style="flex:1;" data-loading>
-                        @csrf
-                        <button class="btn btn-success w-full"><span class="btn-text">✓ Accept</span></button>
-                    </form>
-                    <form method="POST" action="{{ route('transfers.decline', $transfer) }}" style="flex:1;" data-loading>
-                        @csrf
-                        <button class="btn btn-danger w-full"><span class="btn-text">✕ Decline</span></button>
-                    </form>
-                </div>
-            </div>
-        @endforeach
-    @else
-        <div class="text-muted text-sm" style="text-align:center;padding:20px;">No pending incoming transfers.</div>
-    @endif
-
-    {{-- Past incoming --}}
-    @php $pastIncoming = $incoming->where('status', '!=', 'pending'); @endphp
-    @if($pastIncoming->count() > 0)
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-            <div class="text-muted text-xs mb-3" style="text-transform:uppercase;letter-spacing:0.5px;">History</div>
-            @foreach($pastIncoming->take(5) as $transfer)
-                @php $pastSender = $resolveUser($transfer->senderUser, $transfer->sender_user_id); @endphp
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-                    <div>
-                        <span class="text-sm font-medium">{{ $pastSender->name }}</span>
-                        <span class="text-xs text-muted">— {{ \App\Models\Currency::where('code', $transfer->currency)->first()?->symbol ?? $transfer->currency }} {{ number_format($transfer->amount, \App\Models\Currency::where('code', $transfer->currency)->first()?->decimal_places ?? 2) }}</span>
-                        <div class="text-xs text-muted mt-1">{{ $transfer->created_at->format('M d, Y h:i A') }}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <span class="badge badge-{{ $transfer->status === 'accepted' ? 'success' : ($transfer->status === 'declined' ? 'danger' : 'neutral') }}" style="font-size:10px;">
-                            {{ ucfirst($transfer->status) }}
-                        </span>
-                        @if($transfer->accepted_at)
-                            <div class="text-xs text-muted mt-1">{{ $transfer->accepted_at->format('M d, Y h:i A') }}</div>
-                        @elseif($transfer->declined_at)
-                            <div class="text-xs text-muted mt-1">{{ $transfer->declined_at->format('M d, Y h:i A') }}</div>
-                        @endif
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    @endif
+{{-- Stats --}}
+<div class="stats-grid mb-6 animate-fade-in-up">
+    <div class="stat-card" style="border-left: 3px solid #3b82f6;">
+        <div class="stat-icon blue">📨</div>
+        <div class="stat-value">{{ $pendingIncoming->count() }}</div>
+        <div class="stat-label">{{ __('Incoming') }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid #f59e0b;">
+        <div class="stat-icon orange">📤</div>
+        <div class="stat-value">{{ $pendingOutgoing->count() }}</div>
+        <div class="stat-label">{{ __('Outgoing') }}</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid #ef4444;">
+        <div class="stat-icon red">⏰</div>
+        <div class="stat-value">{{ $expiredIncoming->count() + $expiredOutgoing->count() }}</div>
+        <div class="stat-label">{{ __('Expired') }}</div>
+    </div>
 </div>
 
-{{-- Outgoing Transfers --}}
-<div class="card p-6 animate-fade-in-up delay-100">
-    <h2 class="section-title mb-4">📤 Outgoing Transfers</h2>
+<div class="grid-2" style="gap: 24px; align-items: start;">
 
-    @php $pendingOutgoing = $outgoing->where('status', 'pending')->filter(fn($t) => $t->expires_at->isFuture()); @endphp
+    {{-- LEFT: Incoming Transfers --}}
+    <div>
+        <h2 class="section-title mb-4 animate-fade-in-up">📨 {{ __('Incoming Transfers') }}</h2>
 
-    @if($pendingOutgoing->count() > 0)
-        @foreach($pendingOutgoing as $transfer)
-            @php $receiver = $resolveUser($transfer->receiverUser, $transfer->receiver_user_id); @endphp
-            <div class="card p-4 mb-3" style="border-left:3px solid var(--info);">
-                <div class="flex-between mb-3">
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <div class="avatar-initials">
-                            {{ $receiver->initials ?? strtoupper(substr($receiver->name, 0, 2)) }}
+        {{-- Pending Incoming --}}
+        @if($pendingIncoming->count() > 0)
+            @foreach($pendingIncoming as $transfer)
+                @php
+                    $sender = $resolveUser($transfer->senderUser, $transfer->sender_user_id);
+                    $senderAcc = $resolveAccount($transfer->senderAccount, $transfer->sender_account_id);
+                    $receiverAcc = $resolveAccount($transfer->receiverAccount, $transfer->receiver_account_id);
+                    $cur = \App\Models\Currency::where('code', $transfer->currency)->first();
+                    $sym = $cur?->symbol ?? $transfer->currency;
+                    $dec = $cur?->decimal_places ?? 2;
+                @endphp
+                <div class="card p-4 mb-4 animate-fade-in-up" style="border-left: 3px solid #3b82f6;">
+                    <div class="flex-between mb-3">
+                        <div class="flex align-items-center flex-gap-2">
+                            <div class="avatar-initials">{{ $sender->initials ?? '??' }}</div>
+                            <div>
+                                <div class="font-semibold">{{ $sender->name }}</div>
+                                <div class="text-xs text-muted">{{ __('From') }}: {{ $senderAcc->account_number }}</div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="font-semibold">To: {{ $receiver->name }}</div>
-                            <div class="text-xs text-muted">Waiting for acceptance</div>
+                        <div class="text-right">
+                            <div class="font-bold" style="font-size: 20px; color: {{ $transfer->currency === 'USD' ? '#3b82f6' : '#f59e0b' }};">
+                                {{ $sym }}{{ number_format($transfer->amount, $dec) }}
+                            </div>
+                            <div class="text-xs text-muted">{{ $transfer->currency }}</div>
                         </div>
                     </div>
-                    <div style="text-align:right;">
-                        @php
-                            $outCur = \App\Models\Currency::where('code', $transfer->currency)->first();
-                            $outSym = $outCur?->symbol ?? $transfer->currency;
-                            $outDec = $outCur?->decimal_places ?? 2;
-                        @endphp
-                        <div style="font-size:20px;font-weight:700;color:var(--warning);">-{{ $outSym }} {{ number_format($transfer->amount, $outDec) }}</div>
-                        <span class="badge badge-warning" style="font-size:10px;">Pending</span>
+
+                    @if($transfer->description)
+                        <div class="text-sm text-muted mb-3" style="padding: 8px; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+                            💬 {{ $transfer->description }}
+                        </div>
+                    @endif
+
+                    <div class="flex-between text-xs text-muted mb-3">
+                        <span>📋 {{ $transfer->reference_number }}</span>
+                        <span>⏰ {{ $transfer->expires_at->diffForHumans() }}</span>
                     </div>
-                </div>
 
-                <div class="flex-between text-xs text-muted mb-3">
-                    <span>Expires {{ $transfer->time_remaining }}</span>
-                    <span>Ref: {{ $transfer->reference_number }}</span>
-                </div>
-                <div class="text-xs text-muted mb-3">
-                    Sent: {{ $transfer->created_at->format('M d, Y h:i A') }}
-                </div>
+                    {{-- Currency Conversion Info --}}
+                    @if($transfer->currency !== $receiverAcc->currency)
+                        <div class="text-xs mb-3" style="padding: 8px; background: rgba(245, 158, 11, 0.1); border-radius: var(--radius-sm); color: #f59e0b;">
+                            💱 {{ __('Currency conversion') }}: {{ $sym }}{{ number_format($transfer->amount, $dec) }} → {{ \App\Models\Currency::where('code', $receiverAcc->currency)->first()?->symbol ?? '' }}{{ number_format($transfer->amount * ($transfer->exchange_rate ?? 1), \App\Models\Currency::where('code', $receiverAcc->currency)->first()?->decimal_places ?? 2) }}
+                            @if($transfer->exchange_rate)
+                                (1 {{ $transfer->currency }} = {{ number_format($transfer->exchange_rate, 2) }} {{ $receiverAcc->currency }})
+                            @endif
+                        </div>
+                    @endif
 
-                <form method="POST" action="{{ route('transfers.cancel', $transfer) }}" data-loading>
-                    @csrf
-                    <button class="btn btn-ghost btn-sm w-full"><span class="btn-text">Cancel Transfer</span></button>
-                </form>
-            </div>
-        @endforeach
-    @else
-        <div class="text-muted text-sm" style="text-align:center;padding:20px;">No pending outgoing transfers.</div>
-    @endif
-
-    {{-- Past outgoing --}}
-    @php $pastOutgoing = $outgoing->where('status', '!=', 'pending'); @endphp
-    @if($pastOutgoing->count() > 0)
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-            <div class="text-muted text-xs mb-3" style="text-transform:uppercase;letter-spacing:0.5px;">History</div>
-            @foreach($pastOutgoing->take(5) as $transfer)
-                @php $pastReceiver = $resolveUser($transfer->receiverUser, $transfer->receiver_user_id); @endphp
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-                    <div>
-                        <span class="text-sm font-medium">{{ $pastReceiver->name }}</span>
-                        <span class="text-xs text-muted">— {{ \App\Models\Currency::where('code', $transfer->currency)->first()?->symbol ?? $transfer->currency }} {{ number_format($transfer->amount, \App\Models\Currency::where('code', $transfer->currency)->first()?->decimal_places ?? 2) }}</span>
-                        <div class="text-xs text-muted mt-1">{{ $transfer->created_at->format('M d, Y h:i A') }}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <span class="badge badge-{{ $transfer->status === 'accepted' ? 'success' : ($transfer->status === 'cancelled' ? 'neutral' : ($transfer->status === 'expired' ? 'warning' : 'danger')) }}" style="font-size:10px;">
-                            {{ ucfirst($transfer->status) }}
-                        </span>
-                        @if($transfer->cancelled_at)
-                            <div class="text-xs text-muted mt-1">{{ $transfer->cancelled_at->format('M d, Y h:i A') }}</div>
-                        @endif
+                    <div class="flex flex-gap-2">
+                        <form method="POST" action="{{ route('transfers.accept', $transfer) }}" class="flex-1" data-loading>
+                            @csrf
+                            <button type="submit" class="btn btn-success w-full" onclick="return confirm('{{ __('Accept this transfer? Funds will be added to your account.') }}')">
+                                ✅ {{ __('Accept') }}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ route('transfers.decline', $transfer) }}" class="flex-1" data-loading>
+                            @csrf
+                            <button type="submit" class="btn btn-danger w-full" onclick="return confirm('{{ __('Decline this transfer? Sender\'s funds will be released.') }}')">
+                                ❌ {{ __('Decline') }}
+                            </button>
+                        </form>
                     </div>
                 </div>
             @endforeach
-        </div>
-    @endif
+        @endif
+
+        {{-- Expired Incoming --}}
+        @if($expiredIncoming->count() > 0)
+            <div class="text-xs text-muted mb-2 mt-4">{{ __('Expired') }} ({{ $expiredIncoming->count() }})</div>
+            @foreach($expiredIncoming as $transfer)
+                @php
+                    $sender = $resolveUser($transfer->senderUser, $transfer->sender_user_id);
+                    $cur = \App\Models\Currency::where('code', $transfer->currency)->first();
+                    $sym = $cur?->symbol ?? $transfer->currency;
+                    $dec = $cur?->decimal_places ?? 2;
+                @endphp
+                <div class="card p-3 mb-2 animate-fade-in-up" style="opacity: 0.6; border-left: 3px solid #6b7280;">
+                    <div class="flex-between">
+                        <div>
+                            <div class="font-semibold text-sm">{{ $sender->name }}</div>
+                            <div class="text-xs text-muted">{{ $transfer->created_at->format('M d, Y') }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold" style="text-decoration: line-through;">{{ $sym }}{{ number_format($transfer->amount, $dec) }}</div>
+                            <span class="badge badge-danger">{{ __('Expired') }}</span>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        @endif
+
+        {{-- Processed Incoming --}}
+        @if($processedIncoming->count() > 0)
+            <div class="text-xs text-muted mb-2 mt-4">{{ __('Processed') }} ({{ $processedIncoming->count() }})</div>
+            @foreach($processedIncoming as $transfer)
+                @php
+                    $sender = $resolveUser($transfer->senderUser, $transfer->sender_user_id);
+                    $cur = \App\Models\Currency::where('code', $transfer->currency)->first();
+                    $sym = $cur?->symbol ?? $transfer->currency;
+                    $dec = $cur?->decimal_places ?? 2;
+                    $statusColors = ['accepted' => 'success', 'completed' => 'success', 'declined' => 'danger', 'cancelled' => 'warning', 'expired' => 'danger'];
+                @endphp
+                <div class="card p-3 mb-2 animate-fade-in-up" style="border-left: 3px solid var(--{{ $statusColors[$transfer->status] ?? 'info' }});">
+                    <div class="flex-between">
+                        <div>
+                            <div class="font-semibold text-sm">{{ $sender->name }}</div>
+                            <div class="text-xs text-muted">{{ $transfer->updated_at->format('M d, Y h:i A') }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold">{{ $sym }}{{ number_format($transfer->amount, $dec) }}</div>
+                            <span class="badge badge-{{ $statusColors[$transfer->status] ?? 'info' }}">{{ ucfirst($transfer->status) }}</span>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        @endif
+
+        {{-- Empty State --}}
+        @if($incoming->count() === 0)
+            <div class="card p-6 animate-fade-in-up">
+                <div class="empty-state">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+                    <p class="empty-state-title">{{ __('No incoming transfers') }}</p>
+                    <p class="empty-state-text">{{ __('When someone sends you money, it will appear here.') }}</p>
+                </div>
+            </div>
+        @endif
+    </div>
+
+    {{-- RIGHT: Outgoing Transfers --}}
+    <div>
+        <h2 class="section-title mb-4 animate-fade-in-up">📤 {{ __('Outgoing Transfers') }}</h2>
+
+        {{-- Pending Outgoing --}}
+        @if($pendingOutgoing->count() > 0)
+            @foreach($pendingOutgoing as $transfer)
+                @php
+                    $receiver = $resolveUser($transfer->receiverUser, $transfer->receiver_user_id);
+                    $receiverAcc = $resolveAccount($transfer->receiverAccount, $transfer->receiver_account_id);
+                    $cur = \App\Models\Currency::where('code', $transfer->currency)->first();
+                    $sym = $cur?->symbol ?? $transfer->currency;
+                    $dec = $cur?->decimal_places ?? 2;
+                @endphp
+                <div class="card p-4 mb-4 animate-fade-in-up" style="border-left: 3px solid #f59e0b;">
+                    <div class="flex-between mb-3">
+                        <div class="flex align-items-center flex-gap-2">
+                            <div class="avatar-initials">{{ $receiver->initials ?? '??' }}</div>
+                            <div>
+                                <div class="font-semibold">{{ $receiver->name }}</div>
+                                <div class="text-xs text-muted">{{ __('To') }}: {{ $receiverAcc->account_number }}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold" style="font-size: 20px; color: {{ $transfer->currency === 'USD' ? '#3b82f6' : '#f59e0b' }};">
+                                {{ $sym }}{{ number_format($transfer->amount, $dec) }}
+                            </div>
+                            <div class="text-xs text-muted">{{ $transfer->currency }}</div>
+                        </div>
+                    </div>
+
+                    @if($transfer->description)
+                        <div class="text-sm text-muted mb-3" style="padding: 8px; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+                            💬 {{ $transfer->description }}
+                        </div>
+                    @endif
+
+                    <div class="flex-between text-xs text-muted mb-3">
+                        <span>📋 {{ $transfer->reference_number }}</span>
+                        <span>⏰ {{ $transfer->expires_at->diffForHumans() }}</span>
+                    </div>
+
+                    {{-- Cancel Button --}}
+                    <form method="POST" action="{{ route('transfers.cancel', $transfer) }}" data-loading>
+                        @csrf
+                        <button type="submit" class="btn btn-ghost btn-sm w-full" onclick="return confirm('{{ __('Cancel this transfer? Your held funds will be released.') }}')">
+                            🚫 {{ __('Cancel Transfer') }}
+                        </button>
+                    </form>
+                </div>
+            @endforeach
+        @endif
+
+        {{-- Expired Outgoing --}}
+        @if($expiredOutgoing->count() > 0)
+            <div class="text-xs text-muted mb-2 mt-4">{{ __('Expired') }} ({{ $expiredOutgoing->count() }})</div>
+            @foreach($expiredOutgoing as $transfer)
+                @php
+                    $receiver = $resolveUser($transfer->receiverUser, $transfer->receiver_user_id);
+                    $cur = \App\Models\Currency::where('code', $transfer->currency)->first();
+                    $sym = $cur?->symbol ?? $transfer->currency;
+                    $dec = $cur?->decimal_places ?? 2;
+                @endphp
+                <div class="card p-3 mb-2 animate-fade-in-up" style="opacity: 0.6; border-left: 3px solid #6b7280;">
+                    <div class="flex-between">
+                        <div>
+                            <div class="font-semibold text-sm">{{ $receiver->name }}</div>
+                            <div class="text-xs text-muted">{{ $transfer->created_at->format('M d, Y') }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold" style="text-decoration: line-through;">{{ $sym }}{{ number_format($transfer->amount, $dec) }}</div>
+                            <span class="badge badge-danger">{{ __('Expired') }}</span>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        @endif
+
+        {{-- Processed Outgoing --}}
+        @if($processedOutgoing->count() > 0)
+            <div class="text-xs text-muted mb-2 mt-4">{{ __('Processed') }} ({{ $processedOutgoing->count() }})</div>
+            @foreach($processedOutgoing as $transfer)
+                @php
+                    $receiver = $resolveUser($transfer->receiverUser, $transfer->receiver_user_id);
+                    $cur = \App\Models\Currency::where('code', $transfer->currency)->first();
+                    $sym = $cur?->symbol ?? $transfer->currency;
+                    $dec = $cur?->decimal_places ?? 2;
+                    $statusColors = ['accepted' => 'success', 'completed' => 'success', 'declined' => 'danger', 'cancelled' => 'warning', 'expired' => 'danger'];
+                @endphp
+                <div class="card p-3 mb-2 animate-fade-in-up" style="border-left: 3px solid var(--{{ $statusColors[$transfer->status] ?? 'info' }});">
+                    <div class="flex-between">
+                        <div>
+                            <div class="font-semibold text-sm">{{ $receiver->name }}</div>
+                            <div class="text-xs text-muted">{{ $transfer->updated_at->format('M d, Y h:i A') }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold">{{ $sym }}{{ number_format($transfer->amount, $dec) }}</div>
+                            <span class="badge badge-{{ $statusColors[$transfer->status] ?? 'info' }}">{{ ucfirst($transfer->status) }}</span>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        @endif
+
+        {{-- Empty State --}}
+        @if($outgoing->count() === 0)
+            <div class="card p-6 animate-fade-in-up">
+                <div class="empty-state">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+                    <p class="empty-state-title">{{ __('No outgoing transfers') }}</p>
+                    <p class="empty-state-text">{{ __('Your sent transfers will appear here.') }}</p>
+                    <a href="{{ route('transfers.create') }}" class="btn btn-primary mt-4">{{ __('Send a Transfer') }}</a>
+                </div>
+            </div>
+        @endif
+    </div>
 </div>
 @endsection
