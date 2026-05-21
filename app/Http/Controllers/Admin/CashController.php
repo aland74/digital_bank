@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\Currency;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Notification;
@@ -80,10 +81,13 @@ class CashController extends Controller
                 'completed_at' => now(),
             ]);
 
+            $currency = Currency::where('code', $account->currency)->first();
+            $symbol = $currency ? $currency->symbol : '$';
+
             Notification::create([
                 'user_id' => $account->user_id,
                 'title' => 'Deposit Received',
-                'message' => "A deposit of \${$validated['amount']} was made to your account {$account->account_number}.",
+                'message' => "A deposit of {$symbol}{$validated['amount']} was made to your account {$account->account_number}.",
                 'type' => 'success',
                 'icon' => '💰',
             ]);
@@ -96,7 +100,7 @@ class CashController extends Controller
             ]);
         });
 
-        return back()->with('success', "Deposit of \${$validated['amount']} processed successfully.");
+        return back()->with('success', "Deposit of {$symbol}{$validated['amount']} processed successfully.");
     }
 
     /**
@@ -141,10 +145,13 @@ class CashController extends Controller
                 'completed_at' => now(),
             ]);
 
+            $currency = Currency::where('code', $account->currency)->first();
+            $symbol = $currency ? $currency->symbol : '$';
+
             Notification::create([
                 'user_id' => $account->user_id,
                 'title' => 'Withdrawal Processed',
-                'message' => "A withdrawal of \${$validated['amount']} was processed from your account {$account->account_number}.",
+                'message' => "A withdrawal of {$symbol}{$validated['amount']} was processed from your account {$account->account_number}.",
                 'type' => 'info',
                 'icon' => '💸',
             ]);
@@ -157,6 +164,6 @@ class CashController extends Controller
             ]);
         });
 
-        return back()->with('success', "Withdrawal of \${$validated['amount']} processed successfully.");
+        return back()->with('success', "Withdrawal of {$symbol}{$validated['amount']} processed successfully.");
     }
 }

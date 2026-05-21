@@ -11,7 +11,6 @@ use App\Http\Controllers\CardController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CashController;
 use App\Http\Controllers\SupportTicketController;
 
@@ -70,7 +69,9 @@ Route::middleware('guest')->group(function () {
 
     // Two-Factor Authentication Verification
     Route::get('/auth/2fa', [AuthController::class, 'show2faVerify'])->name('auth.2fa.verify');
-    Route::post('/auth/2fa', [AuthController::class, 'verify2fa'])->name('auth.2fa.verify.submit');
+    Route::post('/auth/2fa', [AuthController::class, 'verify2fa'])
+        ->name('auth.2fa.verify.submit')
+        ->middleware('throttle:5,1'); // 5 attempts per minute
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');

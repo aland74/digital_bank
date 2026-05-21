@@ -127,7 +127,10 @@ class AuthController extends Controller
 
                 // ── Step 6: Check 2FA for admin accounts ──
                 if ($user->isAdmin() && $user->two_factor_enabled) {
-                    session(['2fa_user_id' => $user->id]);
+                    session([
+                        '2fa_user_id' => $user->id,
+                        '2fa_remember' => $request->boolean('remember'),
+                    ]);
                     Auth::logout();
                     return redirect()->route('auth.2fa.verify');
                 }
