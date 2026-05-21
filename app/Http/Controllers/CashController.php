@@ -29,11 +29,26 @@ class CashController extends Controller
     {
         $request->validate([
             'account_id' => 'required|exists:accounts,id',
-            'amount' => 'required|numeric|min:10|max:5000',
+            'amount' => 'required|numeric|min:1',
             'pin' => 'required|string|size:4'
         ]);
 
         $account = $request->user()->accounts()->findOrFail($request->account_id);
+
+        // Validate amount based on currency
+        $currency = Currency::where('code', $account->currency)->first();
+        $symbol = $currency?->symbol ?? $account->currency;
+        $decimals = $currency?->decimal_places ?? 2;
+
+        if ($account->currency === 'IQD') {
+            if ($request->amount < 10000 || $request->amount > 5000000) {
+                return back()->withErrors(['amount' => "IQD withdrawal must be between 10,000 and 5,000,000 IQD."])->withInput();
+            }
+        } else {
+            if ($request->amount < 10 || $request->amount > 5000) {
+                return back()->withErrors(['amount' => "USD withdrawal must be between \$10 and \$5,000."])->withInput();
+            }
+        }
 
         // Verify PIN against user's active card
         $card = Card::where('user_id', $request->user()->id)
