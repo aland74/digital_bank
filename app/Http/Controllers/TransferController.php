@@ -301,12 +301,17 @@ class TransferController extends Controller
         // Auto-expire old pending transfers
         $this->expireOldTransfers();
 
-        $incoming = PendingTransfer::incoming($userId)
+        // Query from HQ since pending transfers are stored there
+        $hqConnection = DistributedDatabaseService::getHqConnection();
+
+        $incoming = PendingTransfer::on($hqConnection)
+            ->incoming($userId)
             ->with(['senderUser', 'senderAccount', 'receiverAccount'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $outgoing = PendingTransfer::outgoing($userId)
+        $outgoing = PendingTransfer::on($hqConnection)
+            ->outgoing($userId)
             ->with(['receiverUser', 'senderAccount', 'receiverAccount'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -319,6 +324,15 @@ class TransferController extends Controller
      */
     public function accept(Request $request, PendingTransfer $pendingTransfer, TransactionService $transactionService)
     {
+        // Load from HQ if not found on current connection
+        if (!$pendingTransfer->exists) {
+            $pendingTransfer = PendingTransfer::on(DistributedDatabaseService::getHqConnection())
+                ->find($request->route('pendingTransfer')?->id ?? $request->id);
+            if (!$pendingTransfer) {
+                return back()->with('error', 'Transfer not found.');
+            }
+        }
+
         // Only receiver can accept
         if ($pendingTransfer->receiver_user_id !== $request->user()->id) {
             abort(403);
@@ -386,6 +400,15 @@ class TransferController extends Controller
      */
     public function decline(Request $request, PendingTransfer $pendingTransfer, TransactionService $transactionService)
     {
+        // Load from HQ if not found on current connection
+        if (!$pendingTransfer->exists) {
+            $pendingTransfer = PendingTransfer::on(DistributedDatabaseService::getHqConnection())
+                ->find($request->route('pendingTransfer')?->id ?? $request->id);
+            if (!$pendingTransfer) {
+                return back()->with('error', 'Transfer not found.');
+            }
+        }
+
         if ($pendingTransfer->receiver_user_id !== $request->user()->id) {
             abort(403);
         }
@@ -434,6 +457,15 @@ class TransferController extends Controller
      */
     public function cancel(Request $request, PendingTransfer $pendingTransfer, TransactionService $transactionService)
     {
+        // Load from HQ if not found on current connection
+        if (!$pendingTransfer->exists) {
+            $pendingTransfer = PendingTransfer::on(DistributedDatabaseService::getHqConnection())
+                ->find($request->route('pendingTransfer')?->id ?? $request->id);
+            if (!$pendingTransfer) {
+                return back()->with('error', 'Transfer not found.');
+            }
+        }
+
         if ($pendingTransfer->sender_user_id !== $request->user()->id) {
             abort(403);
         }
