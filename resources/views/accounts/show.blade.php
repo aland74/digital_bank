@@ -92,7 +92,7 @@
                     📋 {{ __('Copy to Clipboard') }}
                 </button>
             </div>
-            <p class="text-sm text-muted mt-4">{{ __('Share this number to receive transfers. This is your unique NexusBank identifier.') }}</p>
+            <p class="text-sm text-muted mt-4">{{ __('Share this number to receive transfers. This is your unique Distributed Bank identifier.') }}</p>
         </div>
     </div>
 

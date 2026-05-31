@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'NexusBank') — Secure Digital Banking</title>
-    <meta name="description" content="NexusBank — Your Secure Digital Banking Platform. Open an account in minutes.">
+    <title>@yield('title', 'Distributed Bank') — Secure Digital Banking</title>
+    <meta name="description" content="Distributed Bank — Your Secure Digital Banking Platform. Open an account in minutes.">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script>
         (function() {

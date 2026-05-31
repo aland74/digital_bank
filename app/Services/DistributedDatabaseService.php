@@ -5,7 +5,6 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 
 class DistributedDatabaseService
 {
@@ -34,19 +33,11 @@ class DistributedDatabaseService
     protected static ?string $fallbackForBranch = null;
 
     /**
-     * Get the active database driver ('sqlite' or 'mysql').
-     */
-    public static function getDriver(): string
-    {
-        return env('DB_CONNECTION', 'mysql');
-    }
-
-    /**
-     * Get the HQ connection name dynamically based on driver.
+     * Get the HQ connection name.
      */
     public static function getHqConnection(): string
     {
-        return self::getDriver() === 'sqlite' ? 'sqlite_hq' : self::HQ_CONNECTION;
+        return self::HQ_CONNECTION;
     }
 
     /**
@@ -80,10 +71,6 @@ class DistributedDatabaseService
             throw new \InvalidArgumentException("Unknown branch: {$branch}");
         }
 
-        if (self::getDriver() === 'sqlite') {
-            return "sqlite_{$branch}";
-        }
-
         return self::BRANCHES[$branch];
     }
 
@@ -108,9 +95,9 @@ class DistributedDatabaseService
     {
         self::$activeBranchConnection = null;
         self::$fallbackForBranch = null;
-        Config::set('database.default', self::getHqConnection());
+        Config::set('database.default', self::HQ_CONNECTION);
 
-        Log::debug("DistributedDB: Connection set to HQ (" . self::getHqConnection() . ")");
+        Log::debug("DistributedDB: Connection set to HQ");
     }
 
     /**
@@ -120,7 +107,7 @@ class DistributedDatabaseService
     {
         self::$activeBranchConnection = null;
         self::$fallbackForBranch = $branch;
-        Config::set('database.default', self::getHqConnection());
+        Config::set('database.default', self::HQ_CONNECTION);
 
         Log::warning("DistributedDB: Branch '{$branch}' database is down! Operating in HQ fallback mode.");
     }
@@ -157,12 +144,12 @@ class DistributedDatabaseService
 
     /**
      * Look up a user's branch by email using the HQ database.
-     * Fall back to checking branch databases sequentially if HQ is down!
+     * Fall back to checking branch databases sequentially if HQ is down.
      */
     public static function findUserBranch(string $email): ?string
     {
         try {
-            $user = DB::connection(self::getHqConnection())
+            $user = DB::connection(self::HQ_CONNECTION)
                 ->table('users')
                 ->where('email', $email)
                 ->whereNull('deleted_at')
@@ -171,7 +158,7 @@ class DistributedDatabaseService
             return $user?->branch;
         } catch (\Exception $e) {
             Log::error("DistributedDB: HQ is down in findUserBranch! Sequence-scanning branch databases directly.");
-            
+
             foreach (self::branchConnections() as $branchConn) {
                 try {
                     $user = DB::connection($branchConn)
@@ -181,7 +168,6 @@ class DistributedDatabaseService
                         ->first(['branch']);
 
                     if ($user) {
-                        Log::info("DistributedDB: Found user branch '{$user->branch}' on branch connection {$branchConn}");
                         return $user->branch;
                     }
                 } catch (\Exception $ex) {
@@ -200,7 +186,7 @@ class DistributedDatabaseService
     public static function findUserBranchById(int $userId): ?string
     {
         try {
-            $user = DB::connection(self::getHqConnection())
+            $user = DB::connection(self::HQ_CONNECTION)
                 ->table('users')
                 ->where('id', $userId)
                 ->whereNull('deleted_at')
@@ -209,7 +195,7 @@ class DistributedDatabaseService
             return $user?->branch;
         } catch (\Exception $e) {
             Log::error("DistributedDB: HQ is down in findUserBranchById! Sequence-scanning branch databases directly.");
-            
+
             foreach (self::branchConnections() as $branchConn) {
                 try {
                     $user = DB::connection($branchConn)
@@ -231,17 +217,33 @@ class DistributedDatabaseService
     }
 
     /**
+     * Get the outbox insert data with new status/retry columns.
+     */
+    private static function outboxData(string $table, int $recordId, string $action, array $data): array
+    {
+        return [
+            'table' => $table,
+            'record_id' => $recordId,
+            'action' => $action,
+            'data' => json_encode($data),
+            'status' => 'pending',
+            'retry_count' => 0,
+            'max_retries' => 5,
+            'created_at' => now(),
+        ];
+    }
+
+    /**
      * Sync a single record to HQ after it has been written to the branch DB.
-     * If HQ is down, records the sync into `pending_hq_syncs` table locally!
+     * If HQ is down, records the sync into `pending_hq_syncs` table locally.
      */
     public static function syncRecordToHQ(string $table, array $data, string $primaryKey = 'id'): void
     {
         $resolvedConn = Config::get('database.default');
 
         try {
-            $hq = DB::connection(self::getHqConnection());
+            $hq = DB::connection(self::HQ_CONNECTION);
 
-            // Check if record exists in HQ
             $exists = $hq->table($table)
                 ->where($primaryKey, $data[$primaryKey] ?? null)
                 ->exists();
@@ -258,15 +260,10 @@ class DistributedDatabaseService
         } catch (\Exception $e) {
             Log::error("DistributedDB: Failed to sync {$table} to HQ: " . $e->getMessage() . ". Logging to pending_hq_syncs.");
 
-            // Save to pending syncs on the local branch DB
             try {
-                DB::connection($resolvedConn)->table('pending_hq_syncs')->insert([
-                    'table' => $table,
-                    'record_id' => $data[$primaryKey] ?? 0,
-                    'action' => 'insert',
-                    'data' => json_encode($data),
-                    'created_at' => now(),
-                ]);
+                DB::connection($resolvedConn)->table('pending_hq_syncs')->insert(
+                    self::outboxData($table, $data[$primaryKey] ?? 0, 'insert', $data)
+                );
             } catch (\Exception $innerEx) {
                 Log::critical("DistributedDB: Outbox failure! Unable to save pending HQ sync: " . $innerEx->getMessage());
             }
@@ -282,7 +279,7 @@ class DistributedDatabaseService
         $resolvedConn = Config::get('database.default');
 
         try {
-            DB::connection(self::getHqConnection())
+            DB::connection(self::HQ_CONNECTION)
                 ->table($table)
                 ->where($primaryKey, $id)
                 ->update(['deleted_at' => now()]);
@@ -292,13 +289,9 @@ class DistributedDatabaseService
             Log::error("DistributedDB: Failed to sync delete to HQ: " . $e->getMessage() . ". Logging to pending_hq_syncs.");
 
             try {
-                DB::connection($resolvedConn)->table('pending_hq_syncs')->insert([
-                    'table' => $table,
-                    'record_id' => $id,
-                    'action' => 'delete',
-                    'data' => json_encode(['is_soft' => true]),
-                    'created_at' => now(),
-                ]);
+                DB::connection($resolvedConn)->table('pending_hq_syncs')->insert(
+                    self::outboxData($table, $id, 'delete', ['is_soft' => true])
+                );
             } catch (\Exception $innerEx) {
                 Log::critical("DistributedDB: Outbox delete failure: " . $innerEx->getMessage());
             }
@@ -314,24 +307,18 @@ class DistributedDatabaseService
     {
         $connection = $branchConnection ?? Config::get('database.default');
 
-        // Write to branch
         $id = DB::connection($connection)->table($table)->insertGetId($data);
 
-        // Write to HQ with the same ID
         $data['id'] = $id;
         try {
-            DB::connection(self::getHqConnection())->table($table)->insert($data);
+            DB::connection(self::HQ_CONNECTION)->table($table)->insert($data);
         } catch (\Exception $e) {
             Log::error("DistributedDB: HQ dual-write failed for {$table}: " . $e->getMessage() . ". Queueing in pending_hq_syncs.");
-            
+
             try {
-                DB::connection($connection)->table('pending_hq_syncs')->insert([
-                    'table' => $table,
-                    'record_id' => $id,
-                    'action' => 'insert',
-                    'data' => json_encode($data),
-                    'created_at' => now(),
-                ]);
+                DB::connection($connection)->table('pending_hq_syncs')->insert(
+                    self::outboxData($table, $id, 'insert', $data)
+                );
             } catch (\Exception $innerEx) {
                 Log::critical("DistributedDB: Failed to save dualWrite pending HQ sync: " . $innerEx->getMessage());
             }
@@ -348,23 +335,17 @@ class DistributedDatabaseService
     {
         $connection = $branchConnection ?? Config::get('database.default');
 
-        // Update branch
         DB::connection($connection)->table($table)->where('id', $id)->update($data);
 
-        // Update HQ
         try {
-            DB::connection(self::getHqConnection())->table($table)->where('id', $id)->update($data);
+            DB::connection(self::HQ_CONNECTION)->table($table)->where('id', $id)->update($data);
         } catch (\Exception $e) {
             Log::error("DistributedDB: HQ dual-update failed for {$table}#{$id}: " . $e->getMessage() . ". Queueing in pending_hq_syncs.");
 
             try {
-                DB::connection($connection)->table('pending_hq_syncs')->insert([
-                    'table' => $table,
-                    'record_id' => $id,
-                    'action' => 'update',
-                    'data' => json_encode($data),
-                    'created_at' => now(),
-                ]);
+                DB::connection($connection)->table('pending_hq_syncs')->insert(
+                    self::outboxData($table, $id, 'update', $data)
+                );
             } catch (\Exception $innerEx) {
                 Log::critical("DistributedDB: Failed to save dualUpdate pending HQ sync: " . $innerEx->getMessage());
             }
@@ -376,7 +357,7 @@ class DistributedDatabaseService
      */
     public static function allConnections(): array
     {
-        return array_merge(self::branchConnections(), [self::getHqConnection()]);
+        return array_merge(self::branchConnections(), [self::HQ_CONNECTION]);
     }
 
     /**

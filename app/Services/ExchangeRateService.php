@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Currency;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -118,20 +119,39 @@ class ExchangeRateService
         $newRate = max(1280.00, min(1340.00, $newRate));
 
         // Update the currencies table
-        self::updateCurrencyTable($newRate);
+        self::updateCurrencyTable($newRate, 'simulation');
 
         Log::info("Exchange rate simulated: 1 USD = {$newRate} IQD");
         return $newRate;
     }
 
     /**
-     * Update the IQD exchange rate in the currencies table.
+     * Update the IQD exchange rate in the currencies table and log to history.
      */
-    private static function updateCurrencyTable(float $rate): void
+    private static function updateCurrencyTable(float $rate, string $source = 'api'): void
     {
+        $previousRate = Currency::where('code', 'IQD')->value('exchange_rate');
+
         Currency::where('code', 'IQD')->update(['exchange_rate' => $rate]);
 
-        // Clear the cache so next read gets fresh value
+        // Log rate change to audit trail
+        try {
+            DB::connection(DistributedDatabaseService::getHqConnection())
+                ->table('exchange_rate_history')
+                ->insert([
+                    'from_currency' => 'USD',
+                    'to_currency' => 'IQD',
+                    'rate' => $rate,
+                    'previous_rate' => $previousRate,
+                    'source' => $source,
+                    'changed_by' => 'system',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+        } catch (\Exception $e) {
+            Log::warning("Failed to log exchange rate history: " . $e->getMessage());
+        }
+
         Cache::forget(self::CACHE_KEY);
     }
 

@@ -356,7 +356,7 @@ class AuthController extends Controller
             try {
                 Notification::create([
                     'user_id' => $user->id,
-                    'title' => 'Welcome to NexusBank! 🎉',
+                    'title' => 'Welcome to Distributed Bank! 🎉',
                     'message' => 'Your account has been verified at the ' . $user->branch_display_name . ' branch. Please upload your identity documents to activate all features.',
                     'type' => 'info',
                     'icon' => '🏦',
@@ -368,7 +368,7 @@ class AuthController extends Controller
             }
 
             return redirect()->route('dashboard')
-                ->with('success', 'Email verified successfully! Welcome to NexusBank.');
+                ->with('success', 'Email verified successfully! Welcome to Distributed Bank.');
         }
 
         return back()->withErrors([

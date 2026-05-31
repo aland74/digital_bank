@@ -4,7 +4,7 @@ titles = {
     "Transfer Request Sent": "داواکاری گواستنەوە نێردرا",
     "Transfer Cancelled": "گواستنەوە هەڵوەشایەوە",
     "Transfer Expired": "گواستنەوە بەسەرچوو",
-    "Welcome to NexusBank! 🎉": "بەخێربێیت بۆ NexusBank! 🎉",
+    "Welcome to Distributed Bank! 🎉": "بەخێربێیت بۆ Distributed Bank! 🎉",
     "Card Frozen — Security Alert": "کارتەکە سڕکرا — ئاگاداری ئاسایش",
     "Card Frozen ❄️": "کارتەکە سڕکرا ❄️",
     "Card PIN Changed": "پین کۆدی کارتەکە گۆڕدرا",

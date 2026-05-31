@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', __('Transfer Money'))
 @section('page-title', '💸 ' . __('Transfer Money'))
-@section('page-subtitle', __('Send funds to any NexusBank account'))
+@section('page-subtitle', __('Send funds to any Distributed Bank account'))
 
 @section('content')
 @php

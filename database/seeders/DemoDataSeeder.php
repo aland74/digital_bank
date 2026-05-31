@@ -92,7 +92,7 @@ class DemoDataSeeder extends Seeder
             ]);
         }
 
-        Notification::create(['user_id' => $john->id, 'title' => 'Welcome to NexusBank!', 'message' => 'Your account at the Erbil branch has been created successfully.', 'type' => 'success', 'is_read' => true, 'read_at' => now()->subDays(5)]);
+        Notification::create(['user_id' => $john->id, 'title' => 'Welcome to Distributed Bank!', 'message' => 'Your account at the Erbil branch has been created successfully.', 'type' => 'success', 'is_read' => true, 'read_at' => now()->subDays(5)]);
         Notification::create(['user_id' => $john->id, 'title' => 'Loan Approved', 'message' => 'Your personal loan of $15,000 has been approved and disbursed.', 'type' => 'success', 'is_read' => true, 'read_at' => now()->subDays(3)]);
 
         // ── Demo Customer 2 — Sulaimaniyah Branch ──────────────
@@ -132,7 +132,7 @@ class DemoDataSeeder extends Seeder
             'activated_at' => now()->subMonths(2),
         ]);
 
-        Notification::create(['user_id' => $emily->id, 'title' => 'Welcome to NexusBank!', 'message' => 'Your account at the Sulaimaniyah branch has been created successfully.', 'type' => 'success', 'is_read' => true, 'read_at' => now()->subDays(5)]);
+        Notification::create(['user_id' => $emily->id, 'title' => 'Welcome to Distributed Bank!', 'message' => 'Your account at the Sulaimaniyah branch has been created successfully.', 'type' => 'success', 'is_read' => true, 'read_at' => now()->subDays(5)]);
 
         // ── Demo Customer 3 — Duhok Branch (pending verification) ──
         DistributedDatabaseService::setActiveBranch('duhok');
@@ -149,7 +149,7 @@ class DemoDataSeeder extends Seeder
         ]);
         $accountService->createAccount($pending, 'savings', 'USD', true);
 
-        Notification::create(['user_id' => $pending->id, 'title' => 'Welcome to NexusBank!', 'message' => 'Your account at the Duhok branch has been created. Please upload your documents.', 'type' => 'info', 'is_read' => false]);
+        Notification::create(['user_id' => $pending->id, 'title' => 'Welcome to Distributed Bank!', 'message' => 'Your account at the Duhok branch has been created. Please upload your documents.', 'type' => 'info', 'is_read' => false]);
 
         // Reset to HQ
         DistributedDatabaseService::setHQ();

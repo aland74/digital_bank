@@ -44,7 +44,7 @@
             <div class="form-group">
                 <label class="form-label">{{ __('Type') }}</label>
                 <select name="type" class="form-select" id="ben-type" required onchange="updateTypeFields()">
-                    <option value="internal" {{ $beneficiary->type === 'internal' ? 'selected' : '' }}>🏦 {{ __('Internal (NexusBank)') }}</option>
+                    <option value="internal" {{ $beneficiary->type === 'internal' ? 'selected' : '' }}>🏦 {{ __('Internal (Distributed Bank)') }}</option>
                     <option value="domestic" {{ $beneficiary->type === 'domestic' ? 'selected' : '' }}>🏛️ {{ __('Domestic (Other Bank)') }}</option>
                     <option value="international" {{ $beneficiary->type === 'international' ? 'selected' : '' }}>🌍 {{ __('International') }}</option>
                 </select>

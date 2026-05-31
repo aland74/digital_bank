@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Dashboard') — NexusBank</title>
-    <meta name="description" content="NexusBank — Your Secure Digital Banking Platform">
+    <title>@yield('title', 'Dashboard') — Distributed Bank</title>
+    <meta name="description" content="Distributed Bank — Your Secure Digital Banking Platform">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script>
         (function() {
@@ -28,7 +28,7 @@
     <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation">
         <div class="sidebar-brand">
             <div class="sidebar-brand-icon">N</div>
-            <span class="sidebar-brand-text">NexusBank</span>
+            <span class="sidebar-brand-text">Distributed Bank</span>
         </div>
 
         <nav class="sidebar-nav">

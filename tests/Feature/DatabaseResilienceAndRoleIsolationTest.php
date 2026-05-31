@@ -78,7 +78,7 @@ class DatabaseResilienceAndRoleIsolationTest extends TestCase
         // 1. Create a Super Admin and a regular Admin
         $superAdmin = User::create([
             'name' => 'Super Admin',
-            'email' => 'super@nexusbank.com',
+            'email' => 'super@distributedbank.com',
             'password' => bcrypt('Password123!'),
             'role' => 'super_admin',
             'status' => 'active',
@@ -87,7 +87,7 @@ class DatabaseResilienceAndRoleIsolationTest extends TestCase
 
         $regularAdmin = User::create([
             'name' => 'Regular Admin',
-            'email' => 'regular@nexusbank.com',
+            'email' => 'regular@distributedbank.com',
             'password' => bcrypt('Password123!'),
             'role' => 'admin',
             'status' => 'active',

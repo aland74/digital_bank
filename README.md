@@ -1,6 +1,6 @@
-# NexusBank — Premium Digital Banking Platform
+# Distributed Bank — Premium Digital Banking Platform
 
-NexusBank is a robust, modern digital banking platform built on **Laravel 11**. It features a state-of-the-art multi-city distributed database architecture, asynchronous queue-based data syncing, a secure physical/virtual smart card system, and a stunning "Glassmorphism" UI optimized for both Light and Dark modes.
+Distributed Bank is a robust, modern digital banking platform built on **Laravel 11**. It features a state-of-the-art multi-city distributed database architecture, asynchronous queue-based data syncing, a secure physical/virtual smart card system, and a stunning "Glassmorphism" UI optimized for both Light and Dark modes.
 
 ---
 
@@ -47,7 +47,7 @@ php artisan key:generate
 ```
 
 ### 3. Database Setup & Seeding
-Because NexusBank uses a distributed database architecture, you need to create the branch databases and migrate them. The `DatabaseSeeder` will automatically handle creating the SQLite files for HQ and the branches, migrating the schemas, and populating them with test data.
+Because Distributed Bank uses a distributed database architecture, you need to create the branch databases and migrate them. The `DatabaseSeeder` will automatically handle creating the SQLite files for HQ and the branches, migrating the schemas, and populating them with test data.
 ```bash
 php artisan migrate:fresh --seed
 ```
@@ -82,22 +82,22 @@ php artisan queue:work
 Once the server is running (usually at `http://localhost:8000`), you can log in using the following seeded accounts:
 
 ### Super Administrator (Full Control & Teller Access)
-*   **Email:** `admin@nexusbank.com`
+*   **Email:** `admin@distributedbank.com`
 *   **Password:** `Admin@123456`
 
 ### Staff Member (Regional Support)
-*   **Email:** `sara@nexusbank.com`
+*   **Email:** `sara@distributedbank.com`
 *   **Password:** `Staff@123456`
 
 ### Standard Customer (Fully KYC Verified)
-*   **Email:** `john@nexusbank.com`
+*   **Email:** `john@distributedbank.com`
 *   **Password:** `Password@123`
 
 ---
 
 ## 🌍 Localization
 
-NexusBank supports complete dynamic localization. You can toggle between **English (EN)** and **Kurdish - Sorani (CKB)** directly from the top navigation bar. The UI automatically adjusts text alignment (LTR / RTL) based on the active language.
+Distributed Bank supports complete dynamic localization. You can toggle between **English (EN)** and **Kurdish - Sorani (CKB)** directly from the top navigation bar. The UI automatically adjusts text alignment (LTR / RTL) based on the active language.
 
 ## 🎨 Theming
 

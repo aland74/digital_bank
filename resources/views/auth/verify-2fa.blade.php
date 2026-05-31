@@ -7,7 +7,7 @@
         {{-- Logo --}}
         <div style="text-align:center;margin-bottom:32px;">
             <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--primary),#6366f1);display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:24px;margin-bottom:12px;">N</div>
-            <h1 style="font-size:24px;font-weight:700;color:var(--text-primary);margin:0;">NexusBank</h1>
+            <h1 style="font-size:24px;font-weight:700;color:var(--text-primary);margin:0;">Distributed Bank</h1>
         </div>
 
         {{-- Card --}}

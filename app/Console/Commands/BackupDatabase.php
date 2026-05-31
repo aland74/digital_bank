@@ -84,7 +84,7 @@ class BackupDatabase extends Command
                     $backupFilePath = "{$backupDir}/{$backupFilename}";
                     
                     $this->info("   Performing portable SQL schema and data dump for '{$connection}'...");
-                    $sqlContent = "-- NexusBank Automated SQL Backup\n";
+                    $sqlContent = "-- Distributed Bank Automated SQL Backup\n";
                     $sqlContent .= "-- Connection: {$connection}\n";
                     $sqlContent .= "-- Exported: " . now()->toDateTimeString() . "\n";
                     $sqlContent .= "-- ------------------------------------------------------\n\n";

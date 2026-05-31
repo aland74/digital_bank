@@ -12,6 +12,8 @@ class UserDevice extends Model
     protected $fillable = [
         'user_id',
         'device_id',
+        'fcm_token',
+        'platform',
         'ip_address',
         'user_agent',
         'last_active_at',

@@ -10,7 +10,7 @@
             <div style="width: 64px; height: 64px; border-radius: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 28px; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);">
                 N
             </div>
-            <h1 style="font-size: 28px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px;">NexusBank</h1>
+            <h1 style="font-size: 28px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px;">Distributed Bank</h1>
             <p style="font-size: 14px; color: var(--text-muted); margin: 0;">{{ __('Secure Digital Banking') }}</p>
         </div>
 

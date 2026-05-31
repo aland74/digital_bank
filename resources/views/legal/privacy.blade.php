@@ -5,7 +5,7 @@
 <p class="last-updated">{{ __('Last updated') }}: {{ date('F j, Y') }}</p>
 
 <h2>1. {{ __('Information We Collect') }}</h2>
-<p>{{ __('NexusBank collects personal information necessary to provide our banking services. This includes:') }}</p>
+<p>{{ __('Distributed Bank collects personal information necessary to provide our banking services. This includes:') }}</p>
 <ul>
     <li>{{ __('Personal identification details (name, email, phone number, national ID)') }}</li>
     <li>{{ __('Financial information (account balances, transaction history)') }}</li>
@@ -29,7 +29,7 @@
 <p>{{ __('We employ industry-standard security measures including AES-256 encryption for sensitive data, bcrypt hashing for passwords, and comprehensive audit logging for all account activities. Our distributed database architecture ensures data redundancy across multiple secure branches.') }}</p>
 
 <h2>4. {{ __('Data Sharing') }}</h2>
-<p>{{ __('NexusBank does not sell or share your personal information with third parties for marketing purposes. We may share data only in the following circumstances:') }}</p>
+<p>{{ __('Distributed Bank does not sell or share your personal information with third parties for marketing purposes. We may share data only in the following circumstances:') }}</p>
 <ul>
     <li>{{ __('With your explicit consent') }}</li>
     <li>{{ __('To comply with legal obligations or regulatory requirements') }}</li>
@@ -44,5 +44,5 @@
 <p>{{ __('We retain your personal data for as long as your account is active. Transaction records are maintained as required by banking regulations. Upon account closure, we retain records for the legally mandated period before secure deletion.') }}</p>
 
 <h2>7. {{ __('Contact Us') }}</h2>
-<p>{{ __('If you have questions about this Privacy Policy, please submit a support ticket through your NexusBank account or contact our data protection team.') }}</p>
+<p>{{ __('If you have questions about this Privacy Policy, please submit a support ticket through your Distributed Bank account or contact our data protection team.') }}</p>
 @endsection

@@ -99,6 +99,8 @@ class ProfileController extends Controller
         $file = $request->file('document_file');
         $path = $file->store('kyc-documents/' . $request->user()->id, 'local');
 
+        $status = config('app.env') === 'local' ? 'verified' : 'pending';
+
         $document = KycDocument::create([
             'user_id' => $request->user()->id,
             'document_type' => $validated['document_type'],
@@ -107,9 +109,18 @@ class ProfileController extends Controller
             'file_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
-            'status' => 'pending',
+            'status' => $status,
+            'verified_at' => $status === 'verified' ? now() : null,
+            'verified_by' => $status === 'verified' ? $request->user()->id : null,
             'expiry_date' => $validated['expiry_date'] ?? null,
         ]);
+
+        if ($status === 'verified') {
+            $user = $request->user();
+            if ($user->status === 'pending_verification') {
+                $user->update(['status' => 'active']);
+            }
+        }
 
         AuditLog::log('kyc_document_uploaded', [
             'model_type' => 'KycDocument',

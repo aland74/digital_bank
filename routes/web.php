@@ -16,7 +16,7 @@ use App\Http\Controllers\SupportTicketController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes — NexusBank Digital Banking
+| Web Routes — Distributed Bank Digital Banking
 |--------------------------------------------------------------------------
 */
 

@@ -43,15 +43,54 @@ Route::prefix('v1')->group(function () {
 
         // Cards
         Route::get('/cards', [\App\Http\Controllers\Api\V1\CardApiController::class, 'index']);
+        Route::post('/cards', [\App\Http\Controllers\Api\V1\CardApiController::class, 'store']);
+        Route::get('/cards/{card}', [\App\Http\Controllers\Api\V1\CardApiController::class, 'show']);
         Route::post('/cards/{card}/freeze', [\App\Http\Controllers\Api\V1\CardApiController::class, 'freeze']);
         Route::post('/cards/{card}/unfreeze', [\App\Http\Controllers\Api\V1\CardApiController::class, 'unfreeze']);
+        Route::post('/cards/{card}/reveal', [\App\Http\Controllers\Api\V1\CardApiController::class, 'reveal']);
+        Route::put('/cards/{card}/limits', [\App\Http\Controllers\Api\V1\CardApiController::class, 'updateLimits']);
+        Route::post('/cards/{card}/toggle-contactless', [\App\Http\Controllers\Api\V1\CardApiController::class, 'toggleContactless']);
+        Route::post('/cards/{card}/toggle-online', [\App\Http\Controllers\Api\V1\CardApiController::class, 'toggleOnline']);
+        Route::post('/cards/{card}/toggle-international', [\App\Http\Controllers\Api\V1\CardApiController::class, 'toggleInternational']);
+        Route::post('/cards/{card}/change-pin', [\App\Http\Controllers\Api\V1\CardApiController::class, 'requestPinChange']);
+        Route::post('/cards/{card}/approve', [\App\Http\Controllers\Api\V1\CardApiController::class, 'approve']);
+        Route::post('/cards/{card}/reject', [\App\Http\Controllers\Api\V1\CardApiController::class, 'reject']);
+
+        // Transfers
+        Route::get('/transfers/pending', [\App\Http\Controllers\Api\V1\TransferApiController::class, 'pending']);
+        Route::post('/transfers', [\App\Http\Controllers\Api\V1\TransferApiController::class, 'store']);
+        Route::post('/transfers/{id}/accept', [\App\Http\Controllers\Api\V1\TransferApiController::class, 'accept']);
+        Route::post('/transfers/{id}/decline', [\App\Http\Controllers\Api\V1\TransferApiController::class, 'decline']);
+        Route::post('/transfers/{id}/cancel', [\App\Http\Controllers\Api\V1\TransferApiController::class, 'cancel']);
+        Route::match(['GET', 'POST'], '/transfers/convert', [\App\Http\Controllers\Api\V1\TransferApiController::class, 'convert']);
+        Route::get('/transfers/exchange-rate', [\App\Http\Controllers\Api\V1\TransferApiController::class, 'exchangeRate']);
+
+        // Loans
+        Route::get('/loans', [\App\Http\Controllers\Api\V1\LoanApiController::class, 'index']);
+        Route::post('/loans', [\App\Http\Controllers\Api\V1\LoanApiController::class, 'store']);
+        Route::get('/loans/{id}', [\App\Http\Controllers\Api\V1\LoanApiController::class, 'show']);
+        Route::post('/loans/{id}/pay', [\App\Http\Controllers\Api\V1\LoanApiController::class, 'pay']);
 
         // Notifications
         Route::get('/notifications', [\App\Http\Controllers\Api\V1\NotificationApiController::class, 'index']);
+        Route::get('/notifications/unread-count', [\App\Http\Controllers\Api\V1\NotificationApiController::class, 'unreadCount']);
+        Route::get('/notifications/latest', [\App\Http\Controllers\Api\V1\NotificationApiController::class, 'latest']);
+        Route::post('/notifications/read-all', [\App\Http\Controllers\Api\V1\NotificationApiController::class, 'markAllAsRead']);
         Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Api\V1\NotificationApiController::class, 'markAsRead']);
 
         // Profile
         Route::get('/profile', [\App\Http\Controllers\Api\V1\ProfileApiController::class, 'show']);
         Route::put('/profile', [\App\Http\Controllers\Api\V1\ProfileApiController::class, 'update']);
+        Route::put('/profile/password', [\App\Http\Controllers\Api\V1\ProfileApiController::class, 'changePassword']);
+        Route::get('/profile/security', [\App\Http\Controllers\Api\V1\ProfileApiController::class, 'security']);
+
+        // KYC
+        Route::get('/profile/kyc/status', [\App\Http\Controllers\Api\V1\ProfileApiController::class, 'kycStatus']);
+        Route::post('/profile/kyc', [\App\Http\Controllers\Api\V1\ProfileApiController::class, 'uploadKyc']);
+
+        // Two-Factor Authentication (2FA)
+        Route::get('/profile/2fa', [\App\Http\Controllers\Api\V1\ProfileApiController::class, 'showTwoFactor']);
+        Route::post('/profile/2fa/enable', [\App\Http\Controllers\Api\V1\ProfileApiController::class, 'enableTwoFactor']);
+        Route::post('/profile/2fa/disable', [\App\Http\Controllers\Api\V1\ProfileApiController::class, 'disableTwoFactor']);
     });
 });

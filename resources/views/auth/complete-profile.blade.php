@@ -7,7 +7,7 @@
         <div class="auth-form-container animate-fade-in-up">
             <div class="auth-logo">
                 <div class="auth-logo-icon">N</div>
-                <span class="auth-logo-text">NexusBank</span>
+                <span class="auth-logo-text">Distributed Bank</span>
             </div>
 
             <h1 class="auth-title">{{ __('Select Your Branch') }}</h1>

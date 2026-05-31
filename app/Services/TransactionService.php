@@ -47,9 +47,23 @@ class TransactionService
         }
         // -----------------------
 
-        // --- DAILY/MONTHLY LIMIT CHECK ---
-        $this->checkTransferLimits($fromAccount, $amount);
-        // ---------------------------------
+        // --- MONTHLY CURRENCY CONVERSION LIMIT CHECK ---
+        if ($fromAccount->currency !== $toAccount->currency) {
+            $monthlyLimit = 200;
+            $thirtyDaysAgo = now()->subDays(30);
+
+            $currentMonthConversionTotal = Transaction::on($fromAccount->getConnectionName())
+                ->where('account_id', $fromAccount->id)
+                ->where('is_conversion', true)
+                ->where('created_at', '>=', $thirtyDaysAgo)
+                ->where('currency', 'USD') // Limit is based on USD equivalent
+                ->sum('amount');
+
+            if (($currentMonthConversionTotal + $amount) > $monthlyLimit) {
+                throw new \RuntimeException("Monthly currency conversion limit of \${$monthlyLimit} exceeded. Please try again in a few days.");
+            }
+        }
+        // -------------------------------------------------
 
         $fromConnection = $fromAccount->getConnectionName();
         $toConnection = $toAccount->getConnectionName();
@@ -76,7 +90,7 @@ class TransactionService
             }
 
             // Debit transaction (in sender's currency)
-            $debitTxn = Transaction::create([
+            $debitTxn = Transaction::on($fromConnection)->create([
                 'account_id' => $fromAccount->id,
                 'reference_number' => $reference,
                 'type' => 'transfer_out',
@@ -91,6 +105,7 @@ class TransactionService
                 'channel' => $channel,
                 'ip_address' => request()->ip(),
                 'completed_at' => now(),
+                'is_conversion' => ($fromAccount->currency !== $toAccount->currency),
             ]);
 
             // Ledger entry for sender (on current branch)
@@ -287,6 +302,22 @@ class TransactionService
             $convertedAmount = $amount;
             $exchangeRate = null;
             if ($fromAccount->currency !== $toAccount->currency) {
+                // --- MONTHLY CURRENCY CONVERSION LIMIT CHECK ---
+                $monthlyLimit = 200;
+                $thirtyDaysAgo = now()->subDays(30);
+
+                $currentMonthConversionTotal = Transaction::on($fromAccount->getConnectionName())
+                    ->where('account_id', $fromAccount->id)
+                    ->where('is_conversion', true)
+                    ->where('created_at', '>=', $thirtyDaysAgo)
+                    ->where('currency', 'USD') // Limit is based on USD equivalent
+                    ->sum('amount');
+
+                if (($currentMonthConversionTotal + $amount) > $monthlyLimit) {
+                    throw new \RuntimeException("Monthly currency conversion limit of \${$monthlyLimit} exceeded. Please try again in a few days.");
+                }
+                // -------------------------------------------------
+
                 if ($lockedExchangeRate) {
                     // Use the rate that was locked when the transfer was created
                     $exchangeRate = $lockedExchangeRate;
@@ -305,7 +336,7 @@ class TransactionService
             $creditRef = Transaction::generateReference();
 
             // Debit transaction (from held funds)
-            $debitTxn = Transaction::create([
+            $debitTxn = Transaction::on($fromConnection)->create([
                 'account_id' => $fromAccount->id,
                 'reference_number' => $reference,
                 'type' => 'transfer_out',
@@ -320,6 +351,7 @@ class TransactionService
                 'channel' => 'web',
                 'ip_address' => request()->ip(),
                 'completed_at' => now(),
+                'is_conversion' => ($fromAccount->currency !== $toAccount->currency),
             ]);
 
             // Ledger entry for sender (on current branch)
@@ -358,6 +390,7 @@ class TransactionService
                 'channel' => 'web',
                 'ip_address' => request()->ip(),
                 'completed_at' => now(),
+                'is_conversion' => ($fromAccount->currency !== $toAccount->currency),
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

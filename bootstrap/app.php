@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(append: [
             \App\Http\Middleware\IdempotencyMiddleware::class,
+            \App\Http\Middleware\SetApiLocale::class,
         ]);
 
         $middleware->alias([

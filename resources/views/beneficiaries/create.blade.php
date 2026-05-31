@@ -12,7 +12,7 @@
             <div style="padding: 8px; background: var(--bg-primary); border-radius: var(--radius-sm); text-align: center;">
                 <div style="font-size: 20px;">🏦</div>
                 <div class="text-xs font-semibold">{{ __('Internal') }}</div>
-                <div class="text-xs text-muted">{{ __('NexusBank') }}</div>
+                <div class="text-xs text-muted">{{ __('Distributed Bank') }}</div>
             </div>
             <div style="padding: 8px; background: var(--bg-primary); border-radius: var(--radius-sm); text-align: center;">
                 <div style="font-size: 20px;">🏛️</div>
@@ -53,7 +53,7 @@
             <div class="form-group">
                 <label class="form-label">{{ __('Type') }}</label>
                 <select name="type" class="form-select" id="ben-type" required onchange="updateTypeFields()">
-                    <option value="internal" {{ old('type') === 'internal' ? 'selected' : '' }}>🏦 {{ __('Internal (NexusBank)') }}</option>
+                    <option value="internal" {{ old('type') === 'internal' ? 'selected' : '' }}>🏦 {{ __('Internal (Distributed Bank)') }}</option>
                     <option value="domestic" {{ old('type') === 'domestic' ? 'selected' : '' }}>🏛️ {{ __('Domestic (Other Bank)') }}</option>
                     <option value="international" {{ old('type') === 'international' ? 'selected' : '' }}>🌍 {{ __('International') }}</option>
                 </select>

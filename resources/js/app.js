@@ -1,7 +1,7 @@
 import './bootstrap';
 
 // ══════════════════════════════════════════════════════════════
-// NexusBank — Premium Interactive Experience v2.0
+// Distributed Bank — Premium Interactive Experience v2.0
 // ══════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', function () {

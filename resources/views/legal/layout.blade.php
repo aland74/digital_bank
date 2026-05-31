@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'Legal' }} — NexusBank</title>
-    <meta name="description" content="{{ $description ?? 'NexusBank legal information' }}">
+    <title>{{ $title ?? 'Legal' }} — Distributed Bank</title>
+    <meta name="description" content="{{ $description ?? 'Distributed Bank legal information' }}">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         (function() {
@@ -95,7 +95,7 @@
 </head>
 <body>
     <nav class="legal-nav">
-        <a href="/" class="logo"><div class="logo-icon">N</div> NexusBank</a>
+        <a href="/" class="logo"><div class="logo-icon">N</div> Distributed Bank</a>
         <a href="/" class="back-link">← {{ __('Back to Home') }}</a>
     </nav>
 
@@ -104,7 +104,7 @@
     </div>
 
     <div class="legal-footer">
-        &copy; {{ date('Y') }} {{ __('NexusBank Platform. All rights reserved. Banking services are simulated for demonstration purposes.') }}
+        &copy; {{ date('Y') }} {{ __('Distributed Bank Platform. All rights reserved. Banking services are simulated for demonstration purposes.') }}
     </div>
 </body>
 </html>

@@ -25,13 +25,13 @@
 </ul>
 
 <h2>3. {{ __('Third-Party Cookies') }}</h2>
-<p>{{ __('NexusBank does not use third-party advertising or tracking cookies. We load Google Fonts for typography, which may set minimal cookies for font caching.') }}</p>
+<p>{{ __('Distributed Bank does not use third-party advertising or tracking cookies. We load Google Fonts for typography, which may set minimal cookies for font caching.') }}</p>
 
 <h2>4. {{ __('Managing Cookies') }}</h2>
-<p>{{ __('You can manage cookies through your browser settings. However, disabling essential cookies may prevent you from using NexusBank services. Your theme preference is stored in your browser\'s localStorage, which you can clear through your browser settings.') }}</p>
+<p>{{ __('You can manage cookies through your browser settings. However, disabling essential cookies may prevent you from using Distributed Bank services. Your theme preference is stored in your browser\'s localStorage, which you can clear through your browser settings.') }}</p>
 
 <h2>5. {{ __('Data Stored Locally') }}</h2>
-<p>{{ __('In addition to cookies, NexusBank uses browser localStorage to store:') }}</p>
+<p>{{ __('In addition to cookies, Distributed Bank uses browser localStorage to store:') }}</p>
 <ul>
     <li>{{ __('Theme preference (dark/light mode)') }}</li>
 </ul>

@@ -26,7 +26,7 @@ class SetupDistributedDatabases extends Command
     {
         $this->info('');
         $this->info('========================================');
-        $this->info('  NexusBank Distributed Database Setup  ');
+        $this->info('  Distributed Bank Distributed Database Setup  ');
         $this->info('  HQ + Erbil + Sulaimaniyah + Duhok     ');
         $this->info('========================================');
         $this->info('');
@@ -65,10 +65,10 @@ class SetupDistributedDatabases extends Command
         if ($driver === 'sqlite') {
             $this->info('Step 1: Creating SQLite database files...');
             $files = [
-                'sqlite_hq' => database_path('nexus_bank_hq.sqlite'),
-                'sqlite_erbil' => database_path('nexus_bank_erbil.sqlite'),
-                'sqlite_sulaimaniyah' => database_path('nexus_bank_sulaimaniyah.sqlite'),
-                'sqlite_duhok' => database_path('nexus_bank_duhok.sqlite'),
+                'sqlite_hq' => database_path('distributed_bank_hq.sqlite'),
+                'sqlite_erbil' => database_path('distributed_bank_erbil.sqlite'),
+                'sqlite_sulaimaniyah' => database_path('distributed_bank_sulaimaniyah.sqlite'),
+                'sqlite_duhok' => database_path('distributed_bank_duhok.sqlite'),
             ];
 
             foreach ($files as $conn => $filePath) {
@@ -208,15 +208,15 @@ class SetupDistributedDatabases extends Command
         $this->info('  All databases ready!                  ');
         $this->info('                                        ');
         if ($driver === 'sqlite') {
-            $this->info('  HQ:           nexus_bank_hq.sqlite    ');
-            $this->info('  Erbil:        nexus_bank_erbil.sqlite ');
-            $this->info('  Sulaimaniyah: nexus_bank_sulaimaniyah.sqlite ');
-            $this->info('  Duhok:        nexus_bank_duhok.sqlite ');
+            $this->info('  HQ:           distributed_bank_hq.sqlite    ');
+            $this->info('  Erbil:        distributed_bank_erbil.sqlite ');
+            $this->info('  Sulaimaniyah: distributed_bank_sulaimaniyah.sqlite ');
+            $this->info('  Duhok:        distributed_bank_duhok.sqlite ');
         } else {
-            $this->info('  HQ:           nexus_bank_hq           ');
-            $this->info('  Erbil:        nexus_bank_erbil        ');
-            $this->info('  Sulaimaniyah: nexus_bank_sulaimaniyah ');
-            $this->info('  Duhok:        nexus_bank_duhok        ');
+            $this->info('  HQ:           distributed_bank_hq           ');
+            $this->info('  Erbil:        distributed_bank_erbil        ');
+            $this->info('  Sulaimaniyah: distributed_bank_sulaimaniyah ');
+            $this->info('  Duhok:        distributed_bank_duhok        ');
         }
         $this->info('========================================');
         $this->info('');

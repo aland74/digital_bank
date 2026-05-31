@@ -38,7 +38,7 @@ class AuthApiController extends Controller
 
         return response()->json([
             'message' => 'Account created successfully.',
-            'user' => $user->only(['id', 'name', 'email', 'phone', 'status']),
+            'user' => array_merge($user->only(['id', 'name', 'email', 'phone', 'status']), ['is_kyc_verified' => false]),
             'token' => $token,
         ], 201);
     }
@@ -85,9 +85,12 @@ class AuthApiController extends Controller
 
         event(new \Illuminate\Auth\Events\Login('sanctum', $user, false));
 
+        $userData = $user->only(['id', 'name', 'email', 'phone', 'role', 'status']);
+        $userData['is_kyc_verified'] = $user->isKycVerified();
+
         return response()->json([
             'message' => 'Login successful.',
-            'user' => $user->only(['id', 'name', 'email', 'phone', 'role', 'status']),
+            'user' => $userData,
             'token' => $token,
         ]);
     }
@@ -119,9 +122,12 @@ class AuthApiController extends Controller
 
         event(new \Illuminate\Auth\Events\Login('sanctum', $user, false));
 
+        $userData = $user->only(['id', 'name', 'email', 'phone', 'role', 'status']);
+        $userData['is_kyc_verified'] = $user->isKycVerified();
+
         return response()->json([
             'message' => 'Login successful.',
-            'user' => $user->only(['id', 'name', 'email', 'phone', 'role', 'status']),
+            'user' => $userData,
             'token' => $token,
         ]);
     }
@@ -134,8 +140,10 @@ class AuthApiController extends Controller
 
     public function user(Request $request)
     {
+        $userData = $request->user()->only(['id', 'name', 'email', 'phone', 'role', 'status', 'two_factor_enabled', 'last_login_at']);
+        $userData['is_kyc_verified'] = $request->user()->isKycVerified();
         return response()->json([
-            'user' => $request->user()->only(['id', 'name', 'email', 'phone', 'role', 'status', 'two_factor_enabled', 'last_login_at']),
+            'user' => $userData,
         ]);
     }
 }
