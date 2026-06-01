@@ -60,6 +60,75 @@ trait SyncsWithHQ
     }
 
     /**
+     * Resolve the branch name this model belongs to.
+     */
+    private function resolveBranchName(): ?string
+    {
+        // 1. If it's a User model and has branch
+        if ($this->getTable() === 'users') {
+            return $this->getAttribute('branch') ?: ($this->getOriginal('branch') ?: null);
+        }
+
+        // 2. If it has a user_id
+        $userId = $this->getAttribute('user_id') ?: ($this->getOriginal('user_id') ?: null);
+        if ($userId) {
+            return DistributedDatabaseService::findUserBranchById($userId);
+        }
+
+        // 3. If it has a user relationship
+        if (method_exists($this, 'user')) {
+            try {
+                $user = $this->user;
+                if ($user && !empty($user->branch)) {
+                    return $user->branch;
+                }
+            } catch (\Exception $e) {}
+        }
+
+        // 4. If it's a SupportTicketReply (belongs to support_ticket)
+        if ($this->getTable() === 'support_ticket_replies') {
+            $ticketId = $this->getAttribute('support_ticket_id') ?: ($this->getOriginal('support_ticket_id') ?: null);
+            if ($ticketId) {
+                $ticket = DB::connection(DistributedDatabaseService::getHqConnection())
+                    ->table('support_tickets')
+                    ->where('id', $ticketId)
+                    ->first();
+                if ($ticket && $ticket->user_id) {
+                    return DistributedDatabaseService::findUserBranchById($ticket->user_id);
+                }
+            }
+        }
+
+        // 5. If it's a LedgerEntry or Transaction (belongs to account)
+        $accountId = $this->getAttribute('account_id') ?: ($this->getOriginal('account_id') ?: null);
+        if ($accountId) {
+            $account = DB::connection(DistributedDatabaseService::getHqConnection())
+                ->table('accounts')
+                ->where('id', $accountId)
+                ->first();
+            if ($account && $account->user_id) {
+                return DistributedDatabaseService::findUserBranchById($account->user_id);
+            }
+        }
+
+        // 6. If it's a LoanRepayment (belongs to loan)
+        if ($this->getTable() === 'loan_repayments') {
+            $loanId = $this->getAttribute('loan_id') ?: ($this->getOriginal('loan_id') ?: null);
+            if ($loanId) {
+                $loan = DB::connection(DistributedDatabaseService::getHqConnection())
+                    ->table('loans')
+                    ->where('id', $loanId)
+                    ->first();
+                if ($loan && $loan->user_id) {
+                    return DistributedDatabaseService::findUserBranchById($loan->user_id);
+                }
+            }
+        }
+
+        return DistributedDatabaseService::getFallbackBranch();
+    }
+
+    /**
      * Prepare a data array for HQ insertion by converting any objects to strings.
      */
     private function prepareDataForHQ(array $data): array
@@ -89,23 +158,22 @@ trait SyncsWithHQ
 
         // Don't sync if we're already writing to HQ
         if ($this->isOnHQConnection()) {
-            // If in HQ fallback mode, we must queue this write on HQ to sync back to the branch later!
-            $fallbackBranch = DistributedDatabaseService::getFallbackBranch();
-            if ($fallbackBranch) {
+            $branch = $this->resolveBranchName();
+            if ($branch) {
                 try {
                     DB::connection(DistributedDatabaseService::getHqConnection())
                         ->table('pending_branch_syncs')
                         ->insert([
-                            'branch' => $fallbackBranch,
+                            'branch' => $branch,
                             'table' => $this->getTable(),
                             'record_id' => $this->getKey(),
                             'action' => 'insert',
                             'data' => json_encode($data),
                             'created_at' => now(),
                         ]);
-                    Log::info("SyncsWithHQ: Recorded HQ fallback insert for down branch '{$fallbackBranch}'");
+                    Log::info("SyncsWithHQ: Recorded HQ sync insert for branch '{$branch}' on {$this->getTable()} #{$this->getKey()}");
                 } catch (\Exception $e) {
-                    Log::critical("SyncsWithHQ: Failed to write pending branch sync to HQ: " . $e->getMessage());
+                    Log::critical("SyncsWithHQ: Failed to write pending branch sync insert to HQ: " . $e->getMessage());
                 }
             }
             return;
@@ -154,21 +222,20 @@ trait SyncsWithHQ
         }
 
         if ($this->isOnHQConnection()) {
-            // If in HQ fallback mode, we must queue this update on HQ to sync back to the branch later!
-            $fallbackBranch = DistributedDatabaseService::getFallbackBranch();
-            if ($fallbackBranch) {
+            $branch = $this->resolveBranchName();
+            if ($branch) {
                 try {
                     DB::connection(DistributedDatabaseService::getHqConnection())
                         ->table('pending_branch_syncs')
                         ->insert([
-                            'branch' => $fallbackBranch,
+                            'branch' => $branch,
                             'table' => $this->getTable(),
                             'record_id' => $this->getKey(),
                             'action' => 'update',
                             'data' => json_encode($changes),
                             'created_at' => now(),
                         ]);
-                    Log::info("SyncsWithHQ: Recorded HQ fallback update for down branch '{$fallbackBranch}'");
+                    Log::info("SyncsWithHQ: Recorded HQ sync update for branch '{$branch}' on {$this->getTable()} #{$this->getKey()}");
                 } catch (\Exception $e) {
                     Log::critical("SyncsWithHQ: Failed to write pending branch sync update to HQ: " . $e->getMessage());
                 }
@@ -219,21 +286,20 @@ trait SyncsWithHQ
         $isSoft = method_exists($this, 'trashed') && $this->trashed();
 
         if ($this->isOnHQConnection()) {
-            // If in HQ fallback mode, we must queue this delete on HQ to sync back to the branch later!
-            $fallbackBranch = DistributedDatabaseService::getFallbackBranch();
-            if ($fallbackBranch) {
+            $branch = $this->resolveBranchName();
+            if ($branch) {
                 try {
                     DB::connection(DistributedDatabaseService::getHqConnection())
                         ->table('pending_branch_syncs')
                         ->insert([
-                            'branch' => $fallbackBranch,
+                            'branch' => $branch,
                             'table' => $this->getTable(),
                             'record_id' => $this->getKey(),
                             'action' => 'delete',
                             'data' => json_encode(['is_soft' => $isSoft]),
                             'created_at' => now(),
                         ]);
-                    Log::info("SyncsWithHQ: Recorded HQ fallback delete for down branch '{$fallbackBranch}'");
+                    Log::info("SyncsWithHQ: Recorded HQ sync delete for branch '{$branch}' on {$this->getTable()} #{$this->getKey()}");
                 } catch (\Exception $e) {
                     Log::critical("SyncsWithHQ: Failed to write pending branch sync delete to HQ: " . $e->getMessage());
                 }

@@ -164,29 +164,60 @@ class TransactionService
                         'available_balance' => $toAccount->available_balance + $convertedAmount,
                         'updated_at' => now(),
                     ]);
-            } catch (\Exception $e) {
-                \Log::warning("Failed to write credit transaction to receiver branch: {$e->getMessage()}");
-                $hqConnection = DistributedDatabaseService::getHqConnection();
-                DB::connection($hqConnection)->table('transactions')->insert($creditTxnData);
-                DB::connection($hqConnection)->table('ledger_entries')->insert($creditLedgerData);
-                DB::connection($hqConnection)->table('accounts')
-                    ->where('id', $toAccount->id)
-                    ->update([
-                        'balance' => $toAccount->balance + $convertedAmount,
-                        'available_balance' => $toAccount->available_balance + $convertedAmount,
-                        'updated_at' => now(),
-                    ]);
-            }
 
-            // Also write credit transaction to HQ for admin visibility
-            try {
+                // Also write credit transaction to HQ for admin visibility (if not already HQ)
                 $hqConnection = DistributedDatabaseService::getHqConnection();
                 if ($receiverConnection !== $hqConnection) {
                     DB::connection($hqConnection)->table('transactions')->insert($creditTxnData);
                     DB::connection($hqConnection)->table('ledger_entries')->insert($creditLedgerData);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Failed to write credit transaction to HQ: {$e->getMessage()}");
+                \Log::warning("Failed to write credit transaction to receiver branch: {$e->getMessage()}");
+                $hqConnection = DistributedDatabaseService::getHqConnection();
+                
+                $txnId = DB::connection($hqConnection)->table('transactions')->insertGetId($creditTxnData);
+                $creditTxnData['id'] = $txnId;
+                
+                $ledgerId = DB::connection($hqConnection)->table('ledger_entries')->insertGetId($creditLedgerData);
+                $creditLedgerData['id'] = $ledgerId;
+                
+                $accountData = [
+                    'balance' => $toAccount->balance + $convertedAmount,
+                    'available_balance' => $toAccount->available_balance + $convertedAmount,
+                    'updated_at' => now()->format('Y-m-d H:i:s'),
+                ];
+                DB::connection($hqConnection)->table('accounts')
+                    ->where('id', $toAccount->id)
+                    ->update($accountData);
+
+                if ($receiverBranch) {
+                    DB::connection($hqConnection)->table('pending_branch_syncs')->insert([
+                        [
+                            'branch' => $receiverBranch,
+                            'table' => 'transactions',
+                            'record_id' => $txnId,
+                            'action' => 'insert',
+                            'data' => json_encode($creditTxnData),
+                            'created_at' => now(),
+                        ],
+                        [
+                            'branch' => $receiverBranch,
+                            'table' => 'ledger_entries',
+                            'record_id' => $ledgerId,
+                            'action' => 'insert',
+                            'data' => json_encode($creditLedgerData),
+                            'created_at' => now(),
+                        ],
+                        [
+                            'branch' => $receiverBranch,
+                            'table' => 'accounts',
+                            'record_id' => $toAccount->id,
+                            'action' => 'update',
+                            'data' => json_encode($accountData),
+                            'created_at' => now(),
+                        ]
+                    ]);
+                }
             }
 
             $creditTxn = new Transaction($creditTxnData);
@@ -405,30 +436,60 @@ class TransactionService
                         'available_balance' => $toAccount->available_balance + $convertedAmount,
                         'updated_at' => now(),
                     ]);
-            } catch (\Exception $e) {
-                \Log::warning("Failed to write credit transaction to receiver branch: {$e->getMessage()}");
-                // Fallback: write to HQ
-                $hqConnection = DistributedDatabaseService::getHqConnection();
-                DB::connection($hqConnection)->table('transactions')->insert($creditTxnData);
-                DB::connection($hqConnection)->table('ledger_entries')->insert($creditLedgerData);
-                DB::connection($hqConnection)->table('accounts')
-                    ->where('id', $toAccount->id)
-                    ->update([
-                        'balance' => $toAccount->balance + $convertedAmount,
-                        'available_balance' => $toAccount->available_balance + $convertedAmount,
-                        'updated_at' => now(),
-                    ]);
-            }
 
-            // Also write credit transaction to HQ for admin visibility
-            try {
+                // Also write credit transaction to HQ for admin visibility (if not already HQ)
                 $hqConnection = DistributedDatabaseService::getHqConnection();
                 if ($receiverConnection !== $hqConnection) {
                     DB::connection($hqConnection)->table('transactions')->insert($creditTxnData);
                     DB::connection($hqConnection)->table('ledger_entries')->insert($creditLedgerData);
                 }
             } catch (\Exception $e) {
-                \Log::warning("Failed to write credit transaction to HQ: {$e->getMessage()}");
+                \Log::warning("Failed to write credit transaction to receiver branch: {$e->getMessage()}");
+                $hqConnection = DistributedDatabaseService::getHqConnection();
+                
+                $txnId = DB::connection($hqConnection)->table('transactions')->insertGetId($creditTxnData);
+                $creditTxnData['id'] = $txnId;
+                
+                $ledgerId = DB::connection($hqConnection)->table('ledger_entries')->insertGetId($creditLedgerData);
+                $creditLedgerData['id'] = $ledgerId;
+                
+                $accountData = [
+                    'balance' => $toAccount->balance + $convertedAmount,
+                    'available_balance' => $toAccount->available_balance + $convertedAmount,
+                    'updated_at' => now()->format('Y-m-d H:i:s'),
+                ];
+                DB::connection($hqConnection)->table('accounts')
+                    ->where('id', $toAccount->id)
+                    ->update($accountData);
+
+                if ($receiverBranch) {
+                    DB::connection($hqConnection)->table('pending_branch_syncs')->insert([
+                        [
+                            'branch' => $receiverBranch,
+                            'table' => 'transactions',
+                            'record_id' => $txnId,
+                            'action' => 'insert',
+                            'data' => json_encode($creditTxnData),
+                            'created_at' => now(),
+                        ],
+                        [
+                            'branch' => $receiverBranch,
+                            'table' => 'ledger_entries',
+                            'record_id' => $ledgerId,
+                            'action' => 'insert',
+                            'data' => json_encode($creditLedgerData),
+                            'created_at' => now(),
+                        ],
+                        [
+                            'branch' => $receiverBranch,
+                            'table' => 'accounts',
+                            'record_id' => $toAccount->id,
+                            'action' => 'update',
+                            'data' => json_encode($accountData),
+                            'created_at' => now(),
+                        ]
+                    ]);
+                }
             }
 
             // Create a placeholder creditTxn object for return

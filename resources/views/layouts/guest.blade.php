@@ -49,11 +49,11 @@
             function updateThemeIcons() {
                 if (!themeIconDark || !themeIconLight) return;
                 if (isDarkMode()) {
-                    themeIconDark.style.display = 'none';
-                    themeIconLight.style.display = 'inline';
-                } else {
                     themeIconDark.style.display = 'inline';
                     themeIconLight.style.display = 'none';
+                } else {
+                    themeIconDark.style.display = 'none';
+                    themeIconLight.style.display = 'inline';
                 }
             }
 

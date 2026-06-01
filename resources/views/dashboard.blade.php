@@ -151,7 +151,7 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
         @forelse($accounts as $account)
             @php
-                $cur = \App\Models\Currency::where('code', $account->currency)->first();
+                $cur = \App\Models\Currency::getByCode($account->currency);
                 $sym = $cur?->symbol ?? $account->currency;
                 $dec = $cur?->decimal_places ?? 2;
                 $isUsd = $account->currency === 'USD';
@@ -185,7 +185,7 @@
     </div>
     @forelse($recentTransactions as $txn)
         @php
-            $cur = \App\Models\Currency::where('code', $txn->currency)->first();
+            $cur = \App\Models\Currency::getByCode($txn->currency);
             $sym = $cur?->symbol ?? $txn->currency;
             $dec = $cur?->decimal_places ?? 2;
             $isCredit = $txn->isCredit();

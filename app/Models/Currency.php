@@ -30,6 +30,18 @@ class Currency extends Model
         return static::where('is_default', true)->first();
     }
 
+    protected static $cachedCurrencies = null;
+
+    public static function getByCode(string $code): ?self
+    {
+        if (self::$cachedCurrencies === null) {
+            self::$cachedCurrencies = static::all()->keyBy(function ($c) {
+                return strtoupper($c->code);
+            });
+        }
+        return self::$cachedCurrencies->get(strtoupper($code));
+    }
+
     public function format(float $amount): string
     {
         return $this->symbol . number_format($amount, $this->decimal_places);

@@ -73,9 +73,7 @@ class Transaction extends Model
 
     public function getCurrencyModel(): ?Currency
     {
-        return Cache::remember("currency_{$this->currency}", 3600, function () {
-            return Currency::where('code', $this->currency)->first();
-        });
+        return Currency::getByCode($this->currency);
     }
 
     public function getFormattedAmountAttribute(): string

@@ -8,6 +8,7 @@ import '../../blocs/dashboard/dashboard_state.dart';
 import '../../blocs/dashboard/dashboard_event.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../../blocs/auth/auth_event.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/card.dart';
 import '../../data/models/account.dart';

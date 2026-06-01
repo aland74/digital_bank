@@ -35,7 +35,15 @@ class NotificationController extends Controller
         $notification->markAsRead();
 
         if ($notification->action_url) {
-            return redirect($notification->action_url);
+            $url = $notification->action_url;
+            $parsedUrl = parse_url($url);
+
+            // Restrict redirects to relative paths (starting with a single /) or absolute URLs on our app host
+            if (!isset($parsedUrl['host']) || $parsedUrl['host'] === parse_url(config('app.url'), PHP_URL_HOST)) {
+                if (!str_starts_with($url, '//')) {
+                    return redirect($url);
+                }
+            }
         }
 
         return back();

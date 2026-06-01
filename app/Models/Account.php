@@ -87,9 +87,7 @@ class Account extends Model
 
     public function currencyModel(): ?Currency
     {
-        return Cache::remember("currency_{$this->currency}", 3600, function () {
-            return Currency::where('code', $this->currency)->first();
-        });
+        return Currency::getByCode($this->currency);
     }
 
     public function getFormattedBalanceAttribute(): string

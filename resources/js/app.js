@@ -128,12 +128,12 @@ function initThemeToggle() {
         if (!themeIconDark || !themeIconLight) return;
         if (isDarkMode()) {
             // Currently dark, show sun icon (to switch to light)
-            themeIconDark.style.display = 'none';
-            themeIconLight.style.display = 'inline';
-        } else {
-            // Currently light, show moon icon (to switch to dark)
             themeIconDark.style.display = 'inline';
             themeIconLight.style.display = 'none';
+        } else {
+            // Currently light, show moon icon (to switch to dark)
+            themeIconDark.style.display = 'none';
+            themeIconLight.style.display = 'inline';
         }
     }
 
