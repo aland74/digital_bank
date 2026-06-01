@@ -44,13 +44,38 @@ class DemoDataSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
+        \App\Models\KycDocument::create([
+            'user_id' => $john->id,
+            'document_type' => 'passport',
+            'document_number' => 'P-12345678',
+            'file_path' => 'kyc-documents/' . $john->id . '/passport.jpg',
+            'file_name' => 'passport.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size' => 102400,
+            'status' => 'verified',
+            'verified_at' => now(),
+            'verified_by' => 1,
+        ]);
+        \App\Models\KycDocument::create([
+            'user_id' => $john->id,
+            'document_type' => 'national_id',
+            'document_number' => 'N-12345678',
+            'file_path' => 'kyc-documents/' . $john->id . '/national_id.jpg',
+            'file_name' => 'national_id.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size' => 102400,
+            'status' => 'verified',
+            'verified_at' => now(),
+            'verified_by' => 1,
+        ]);
+
         $johnSavings = $accountService->createAccount($john, 'savings', 'USD', true);
-        $johnChecking = $accountService->createAccount($john, 'checking', 'USD');
+        $johnIQD = $accountService->createAccount($john, 'savings', 'IQD', false);
         $this->seedTransactions($johnSavings, 25000.00, 8);
-        $this->seedTransactions($johnChecking, 8500.00, 5);
+        $this->seedTransactions($johnIQD, 11126500.00, 5);
 
         Card::create([
-            'account_id' => $johnChecking->id, 'user_id' => $john->id,
+            'account_id' => $johnSavings->id, 'user_id' => $john->id,
             'card_number_last4' => '4521',
             'card_number_encrypted' => Crypt::encryptString('4532015112830366'),
             'card_type' => 'debit', 'card_brand' => 'visa', 'cardholder_name' => 'KARWAN AHMAD',
@@ -103,6 +128,7 @@ class DemoDataSeeder extends Seeder
             'email' => 'shilan@demo.com',
             'password' => bcrypt('Demo@12345'),
             'phone' => '+964-770-200-3001',
+            'national_id' => 'IQ-87654321',
             'date_of_birth' => '1988-03-22',
             'address_line_1' => 'Salim Street, Sulaymaniyah',
             'city' => 'Sulaimaniyah',
@@ -115,10 +141,35 @@ class DemoDataSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
+        \App\Models\KycDocument::create([
+            'user_id' => $emily->id,
+            'document_type' => 'passport',
+            'document_number' => 'P-87654321',
+            'file_path' => 'kyc-documents/' . $emily->id . '/passport.jpg',
+            'file_name' => 'passport.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size' => 102400,
+            'status' => 'verified',
+            'verified_at' => now(),
+            'verified_by' => 1,
+        ]);
+        \App\Models\KycDocument::create([
+            'user_id' => $emily->id,
+            'document_type' => 'national_id',
+            'document_number' => 'N-87654321',
+            'file_path' => 'kyc-documents/' . $emily->id . '/national_id.jpg',
+            'file_name' => 'national_id.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size' => 102400,
+            'status' => 'verified',
+            'verified_at' => now(),
+            'verified_by' => 1,
+        ]);
+
         $emilySavings = $accountService->createAccount($emily, 'savings', 'USD', true);
-        $emilyBusiness = $accountService->createAccount($emily, 'business', 'USD');
+        $emilyIQD = $accountService->createAccount($emily, 'savings', 'IQD', false);
         $this->seedTransactions($emilySavings, 42000.00, 12);
-        $this->seedTransactions($emilyBusiness, 125000.00, 15);
+        $this->seedTransactions($emilyIQD, 163625000.00, 15);
 
         Card::create([
             'account_id' => $emilySavings->id, 'user_id' => $emily->id,
@@ -142,12 +193,14 @@ class DemoDataSeeder extends Seeder
             'email' => 'heman@demo.com',
             'password' => bcrypt('Demo@12345'),
             'phone' => '+964-762-300-4001',
+            'national_id' => 'IQ-56781234',
             'branch' => 'duhok',
             'role' => 'customer',
             'status' => 'pending_verification',
             'country' => 'IQ',
         ]);
         $accountService->createAccount($pending, 'savings', 'USD', true);
+        $accountService->createAccount($pending, 'savings', 'IQD', false);
 
         Notification::create(['user_id' => $pending->id, 'title' => 'Welcome to Distributed Bank!', 'message' => 'Your account at the Duhok branch has been created. Please upload your documents.', 'type' => 'info', 'is_read' => false]);
 

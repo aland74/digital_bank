@@ -6,7 +6,7 @@ $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
-$email = 'admin@nexusbank.com';
+$email = 'admin@distributedbank.com';
 $password = 'Admin@123456';
 
 echo "=== CHECKING sqlite_hq ===\n";

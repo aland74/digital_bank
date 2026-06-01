@@ -558,7 +558,7 @@ class AdminController extends Controller
             'transfer_expiry_hours' => BankSetting::get('transfer_expiry_hours', 48),
             'max_pin_attempts' => BankSetting::get('max_pin_attempts', 3),
             'bank_name' => BankSetting::get('bank_name', 'Distributed Bank'),
-            'support_email' => BankSetting::get('support_email', 'support@nexusbank.com'),
+            'support_email' => BankSetting::get('support_email', 'support@distributedbank.com'),
             'default_currency' => BankSetting::get('default_currency', 'USD'),
             'daily_transfer_limit' => BankSetting::get('daily_transfer_limit', 10000),
             'min_transfer_amount' => BankSetting::get('min_transfer_amount', 1),

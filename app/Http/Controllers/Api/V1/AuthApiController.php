@@ -21,6 +21,7 @@ class AuthApiController extends Controller
             'email' => 'required|email|unique:users',
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'phone' => 'nullable|string|max:20',
+            'national_id' => 'nullable|string|max:50',
             'branch' => 'required|in:' . implode(',', \App\Services\DistributedDatabaseService::branchKeys()),
         ]);
 
@@ -43,6 +44,7 @@ class AuthApiController extends Controller
             'email' => $validated['email'],
             'password' => $validated['password'],
             'phone' => $validated['phone'] ?? null,
+            'national_id' => $validated['national_id'] ?? ('IQ-' . rand(10000000, 99999999)),
             'branch' => $branch,
             'city' => ucfirst($branch),
             'state' => ucfirst($branch),

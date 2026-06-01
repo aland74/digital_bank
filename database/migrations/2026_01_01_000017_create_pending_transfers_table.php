@@ -11,10 +11,20 @@ return new class extends Migration
         Schema::create('pending_transfers', function (Blueprint $table) {
             $table->id();
             $table->string('reference_number', 32)->unique();
-            $table->foreignId('sender_account_id')->constrained('accounts')->onDelete('cascade');
-            $table->foreignId('receiver_account_id')->constrained('accounts')->onDelete('cascade');
-            $table->foreignId('sender_user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('receiver_user_id')->constrained('users')->onDelete('cascade');
+            $connection = Schema::getConnection()->getName();
+            $isHq = str_contains($connection, 'hq');
+
+            if ($isHq) {
+                $table->foreignId('sender_account_id')->constrained('accounts')->onDelete('cascade');
+                $table->foreignId('receiver_account_id')->constrained('accounts')->onDelete('cascade');
+                $table->foreignId('sender_user_id')->constrained('users')->onDelete('cascade');
+                $table->foreignId('receiver_user_id')->constrained('users')->onDelete('cascade');
+            } else {
+                $table->unsignedBigInteger('sender_account_id');
+                $table->unsignedBigInteger('receiver_account_id');
+                $table->unsignedBigInteger('sender_user_id');
+                $table->unsignedBigInteger('receiver_user_id');
+            }
             $table->decimal('amount', 18, 2);
             $table->string('currency', 3)->default('USD');
             $table->decimal('exchange_rate', 18, 8)->nullable();

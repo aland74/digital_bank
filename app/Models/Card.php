@@ -8,10 +8,43 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class Card extends Model
 {
     use HasFactory, SoftDeletes, SyncsWithHQ;
+
+    /**
+     * Enforce KYC verification before any card is written as 'active'.
+     * This is an application-layer guard that sits above the DB trigger.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (Card $card) {
+            if ($card->status === 'active') {
+                $user = \App\Models\User::find($card->user_id);
+                if ($user && !$user->isKycVerified()) {
+                    throw ValidationException::withMessages([
+                        'kyc' => 'KYC_REQUIRED: You must have a verified Passport and National ID before creating an active card.',
+                    ]);
+                }
+            }
+        });
+
+        static::updating(function (Card $card) {
+            if ($card->isDirty('status') && $card->status === 'active') {
+                $user = \App\Models\User::find($card->user_id);
+                if ($user && !$user->isKycVerified()) {
+                    throw ValidationException::withMessages([
+                        'kyc' => 'KYC_REQUIRED: You must have a verified Passport and National ID before activating a card.',
+                    ]);
+                }
+            }
+        });
+    }
+
 
     protected $fillable = [
         'account_id', 'user_id', 'card_number_last4', 'card_number_encrypted',

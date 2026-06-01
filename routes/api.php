@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes — NexusBank
+| API Routes — Distributed Bank
 |--------------------------------------------------------------------------
 | RESTful API v1 for mobile app integration.
 | Authentication via Laravel Sanctum (token-based).

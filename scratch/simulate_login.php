@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Session;
 
 // Mock session and request
 $request = Request::create('/login', 'POST', [
-    'email' => 'admin@nexusbank.com',
+    'email' => 'admin@distributedbank.com',
     'password' => 'Admin@123456',
 ]);
 

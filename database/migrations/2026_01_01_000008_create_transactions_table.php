@@ -23,7 +23,14 @@ return new class extends Migration
             $table->decimal('balance_after', 18, 2);
             $table->enum('status', ['pending', 'completed', 'failed', 'cancelled', 'reversed'])->default('pending');
             $table->string('description')->nullable();
-            $table->foreignId('recipient_account_id')->nullable()->constrained('accounts')->onDelete('set null');
+            $connection = Schema::getConnection()->getName();
+            $isHq = str_contains($connection, 'hq');
+
+            if ($isHq) {
+                $table->foreignId('recipient_account_id')->nullable()->constrained('accounts')->onDelete('set null');
+            } else {
+                $table->unsignedBigInteger('recipient_account_id')->nullable();
+            }
             $table->string('recipient_name')->nullable();
             $table->string('recipient_bank')->nullable();
             $table->string('recipient_account_number')->nullable();

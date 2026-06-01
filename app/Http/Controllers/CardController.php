@@ -23,17 +23,22 @@ class CardController extends Controller
     public function create(Request $request)
     {
         $user = $request->user();
+        $kycVerified = $user->isKycVerified();
 
-        if (!$user->isKycVerified()) {
-            return redirect()->route('profile.kyc')
-                ->with('error', 'You must upload and verify your KYC documents before you can request a new card.');
-        }
-
-        return view('cards.create', compact('user'));
+        return view('cards.create', compact('user', 'kycVerified'));
     }
 
     public function store(Request $request, AccountService $accountService)
     {
+        $user = $request->user();
+
+        // ── KYC Hard Block ─────────────────────────────────────────
+        if (!$user->isKycVerified()) {
+            return redirect()->route('profile.kyc')
+                ->with('error', '🔒 KYC verification required. Please upload and get your Passport and National ID verified before creating a card.');
+        }
+        // ───────────────────────────────────────────────────────────
+
         $validated = $request->validate([
             'card_type' => 'required|in:debit,credit,virtual,prepaid',
             'card_brand' => 'required|in:visa,mastercard',
@@ -41,8 +46,6 @@ class CardController extends Controller
             'account_type' => 'required|in:savings,checking,business,fixed_deposit',
             'currency' => 'required|string|size:3',
         ]);
-
-        $user = $request->user();
 
         // Create primary account in selected currency
         $account = $accountService->createAccount(
@@ -66,10 +69,9 @@ class CardController extends Controller
         // Set expiry: 2 years from now
         $expiry = now()->addYears(2);
 
-        if (!$user->isKycVerified()) {
-            return redirect()->route('profile.kyc')
-                ->with('error', 'You must complete KYC verification before ordering a card.');
-        }
+        // Status is always active here because we only reach this point if KYC is verified
+        $status = 'active';
+        $activatedAt = now();
 
         $card = Card::create([
             'account_id' => $account->id,
@@ -83,37 +85,24 @@ class CardController extends Controller
             'expiry_year' => $expiry->format('Y'),
             'cvv_encrypted' => Crypt::encryptString($cvv),
             'pin_hash' => $pinData['hash'],
-            'status' => 'pending_approval',
+            'status' => $status,
             'daily_limit' => 5000.00,
             'monthly_limit' => 25000.00,
             'is_contactless' => true,
             'is_online_enabled' => true,
             'is_international_enabled' => false,
-            'activated_at' => null,
+            'activated_at' => $activatedAt,
             'pin_attempts' => 0,
         ]);
 
-        // Notify user of pending card order
         Notification::create([
             'user_id' => $user->id,
-            'title' => 'Card Order Submitted 💳',
-            'message' => "Your {$validated['card_brand']} {$validated['card_type']} card order has been submitted and is pending admin approval.",
-            'type' => 'info',
+            'title' => 'Card Activated! 🎉',
+            'message' => "Your card ending in {$card->card_number_last4} has been activated and is ready to use.",
+            'type' => 'success',
             'icon' => '💳',
             'action_url' => route('cards.index'),
         ]);
-
-        // Notify admins
-        $admins = \App\Models\User::admins()->get();
-        foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'title' => 'New Card Order Request 📋',
-                'message' => "{$user->name} has ordered a {$validated['card_brand']} {$validated['card_type']} card. Please review and approve.",
-                'type' => 'warning',
-                'icon' => '📋',
-            ]);
-        }
 
         AuditLog::log('card_ordered', [
             'model_type' => 'Card',
@@ -124,14 +113,16 @@ class CardController extends Controller
                 'card_brand' => $validated['card_brand'],
                 'last4' => $card->card_number_last4,
                 'account_number' => $account->account_number,
-                'status' => 'pending_approval',
+                'status' => $status,
             ],
         ]);
 
         // Pass the plain PIN to the created page (shown ONCE)
+        $message = 'Card created successfully and is active.';
+
         return redirect()->route('cards.created', ['card' => $card->id])
             ->with('card_pin', $pinData['plain'])
-            ->with('success', 'Card order submitted successfully and is pending admin approval.');
+            ->with('success', $message);
     }
 
     public function created(Request $request, Card $card)

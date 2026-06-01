@@ -58,6 +58,7 @@
                         pattern="[0-9]{6}"
                         inputmode="numeric"
                         placeholder="000000"
+                        value="{{ $otp ?? '' }}"
                         autocomplete="one-time-code"
                         required
                         autofocus

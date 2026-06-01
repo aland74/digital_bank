@@ -18,7 +18,14 @@ return new class extends Migration
             $table->string('mime_type', 50);
             $table->integer('file_size');
             $table->enum('status', ['pending', 'under_review', 'verified', 'rejected', 'expired'])->default('pending');
-            $table->foreignId('verified_by')->nullable()->constrained('users')->onDelete('set null');
+            $connection = Schema::getConnection()->getName();
+            $isHq = str_contains($connection, 'hq');
+
+            if ($isHq) {
+                $table->foreignId('verified_by')->nullable()->constrained('users')->onDelete('set null');
+            } else {
+                $table->unsignedBigInteger('verified_by')->nullable();
+            }
             $table->timestamp('verified_at')->nullable();
             $table->text('rejection_reason')->nullable();
             $table->date('expiry_date')->nullable();

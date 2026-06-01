@@ -86,9 +86,11 @@ class TransferApiController extends Controller
             return response()->json(['message' => 'Insufficient funds.'], 422);
         }
 
+        $holdPlaced = false;
         try {
             // Hold funds on sender's account
             $transactionService->holdFunds($fromAccount, $validated['amount']);
+            $holdPlaced = true;
 
             // Lock exchange rate at time of transfer creation
             $exchangeRate = null;
@@ -146,6 +148,13 @@ class TransferApiController extends Controller
                 'pending_transfer' => $pendingTransfer->fresh(),
             ], 201);
         } catch (\Exception $e) {
+            if ($holdPlaced) {
+                try {
+                    $transactionService->releaseHold($fromAccount, $validated['amount']);
+                } catch (\Exception $innerEx) {
+                    \Log::error("Failed to release hold after API transfer failure: " . $innerEx->getMessage());
+                }
+            }
             return response()->json(['message' => $e->getMessage()], 422);
         }
     }

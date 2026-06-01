@@ -22,11 +22,20 @@ class CardApiController extends Controller
     public function store(Request $request, AccountService $accountService) {
         $user = $request->user();
 
+        // ── KYC Hard Block ──────────────────────────────────────────
         if (!$user->isKycVerified()) {
             return response()->json([
-                'message' => 'You must complete KYC verification before ordering a card. Please upload your Passport and National ID.',
-            ], 422);
+                'message'         => 'KYC verification required to create a card.',
+                'error_code'      => 'KYC_REQUIRED',
+                'required_action' => 'UPLOAD_KYC',
+                'details'         => 'You must have a verified Passport and National ID before you can create or activate a card.',
+            ], 403);
         }
+        // ────────────────────────────────────────────────────────────
+
+        // KYC is verified — card is always active
+        $status      = 'active';
+        $activatedAt = now();
 
         $validated = $request->validate([
             'card_type'       => 'required|in:debit,credit,virtual,prepaid',
@@ -70,36 +79,23 @@ class CardApiController extends Controller
             'expiry_year'              => $expiry->format('Y'),
             'cvv_encrypted'            => Crypt::encryptString($cvv),
             'pin_hash'                 => $pinData['hash'],
-            'status'                   => 'pending_approval',
+            'status'                   => $status,
             'daily_limit'              => 5000.00,
             'monthly_limit'            => 25000.00,
             'is_contactless'           => true,
             'is_online_enabled'        => true,
             'is_international_enabled' => false,
-            'activated_at'             => null,
+            'activated_at'             => $activatedAt,
             'pin_attempts'             => 0,
         ]);
 
-        // Notify user of pending card order
         Notification::create([
             'user_id' => $user->id,
-            'title'   => 'Card Order Submitted 💳',
-            'message' => "Your {$validated['card_brand']} {$validated['card_type']} card order has been submitted and is pending admin approval.",
-            'type'    => 'info',
+            'title'   => 'Card Activated! 🎉',
+            'message' => "Your card ending in {$card->card_number_last4} has been activated and is ready to use.",
+            'type'    => 'success',
             'icon'    => '💳',
         ]);
-
-        // Notify admins
-        $admins = \App\Models\User::admins()->get();
-        foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'title'   => 'New Card Order Request 📋',
-                'message' => "{$user->name} has ordered a {$validated['card_brand']} {$validated['card_type']} card. Please review and approve.",
-                'type'    => 'warning',
-                'icon'    => '📋',
-            ]);
-        }
 
         AuditLog::log('card_ordered', [
             'model_type' => 'Card',
@@ -109,18 +105,19 @@ class CardApiController extends Controller
                 'card_type'  => $validated['card_type'],
                 'card_brand' => $validated['card_brand'],
                 'last4'      => $card->card_number_last4,
-                'status'     => 'pending_approval',
+                'status'     => $status,
             ],
         ]);
 
         return response()->json([
-            'message' => 'Card order submitted successfully! It is pending admin approval.',
+            'message' => 'Card created successfully and is active.',
             'card'    => [
                 'id'         => $card->id,
                 'card_type'  => $card->card_type,
                 'card_brand' => $card->card_brand,
                 'last4'      => $card->card_number_last4,
                 'status'     => $card->status,
+                'pin'        => $pinData['plain'],
             ],
         ], 201);
     }

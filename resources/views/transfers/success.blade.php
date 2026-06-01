@@ -41,7 +41,7 @@
                 </div>
                 <div class="receipt-row" style="padding:6px 0;">
                     <span class="receipt-label">{{ __('To') }}</span>
-                    <span class="receipt-value">{{ $pendingTransfer->receiverUser->name }}</span>
+                    <span class="receipt-value">{{ optional($pendingTransfer->receiverUser)->name ?? __('Unknown Recipient') }}</span>
                 </div>
                 <div class="receipt-row" style="padding:6px 0;">
                     <span class="receipt-label">{{ __('Status') }}</span>

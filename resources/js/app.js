@@ -309,7 +309,13 @@ function initPasswordToggles() {
 // ══════════════════════════════════════════════════════════════
 function initLoadingButtons() {
     document.querySelectorAll('form[data-loading]').forEach(form => {
-        form.addEventListener('submit', function () {
+        form.addEventListener('submit', function (e) {
+            if (this.dataset.submitting === 'true') {
+                e.preventDefault();
+                return;
+            }
+            this.dataset.submitting = 'true';
+            
             const btn = this.querySelector('button[type="submit"]');
             if (btn && !btn.classList.contains('is-loading')) {
                 btn.classList.add('is-loading');
@@ -318,6 +324,10 @@ function initLoadingButtons() {
                     // Wrap existing text
                     btn.innerHTML = '<span class="btn-text">' + btn.innerHTML + '</span>';
                 }
+                // Disable button after a brief timeout to let standard browser submit initiate
+                setTimeout(() => {
+                    btn.disabled = true;
+                }, 50);
             }
         });
     });

@@ -9,11 +9,21 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        $notifications = $request->user()->notifications()
+        $user = $request->user();
+        $notifications = $user->notifications()
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('notifications.index', compact('notifications'));
+        $stats = [
+            'total'      => $user->notifications()->count(),
+            'unread'     => $user->unreadNotificationsCount(),
+            'actionable' => $user->notifications()
+                ->where('type', 'transfer_request')
+                ->where('is_read', false)
+                ->count(),
+        ];
+
+        return view('notifications.index', compact('notifications', 'stats'));
     }
 
     public function markAsRead(Notification $notification)

@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
 $users = [
-    'admin@nexusbank.com' => 'Admin@123456',
-    'sara@nexusbank.com' => 'Staff@123456',
+    'admin@distributedbank.com' => 'Admin@123456',
+    'sara@distributedbank.com' => 'Staff@123456',
     'john.doe@gmail.com' => 'Demo@12345',
     'aland.developer@gmail.com' => 'Demo@12345',
     'sulaimaniyah.admin@gmail.com' => 'Demo@12345',

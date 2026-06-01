@@ -104,9 +104,11 @@ class TransferController extends Controller
             return back()->withErrors(['transfer' => 'Insufficient available funds.'])->withInput();
         }
 
+        $holdPlaced = false;
         try {
             // Hold funds on sender's account
             $transactionService->holdFunds($fromAccount, $validated['amount']);
+            $holdPlaced = true;
 
             // Lock exchange rate at time of transfer creation
             $exchangeRate = null;
@@ -163,6 +165,13 @@ class TransferController extends Controller
 
             return redirect()->route('transfers.success', ['reference' => $pendingTransfer->reference_number]);
         } catch (\Exception $e) {
+            if ($holdPlaced) {
+                try {
+                    $transactionService->releaseHold($fromAccount, $validated['amount']);
+                } catch (\Exception $innerEx) {
+                    \Log::error("Failed to release hold after transfer failure: " . $innerEx->getMessage());
+                }
+            }
             return back()->withErrors(['transfer' => $e->getMessage()])->withInput();
         }
     }
@@ -285,27 +294,38 @@ class TransferController extends Controller
     public function success(Request $request)
     {
         $reference = $request->query('reference');
-        $pendingTransfer = PendingTransfer::where('reference_number', $reference)->first();
+
+        // Eager-load receiverUser so the view can display the recipient name.
+        // Use the default (HQ) connection to ensure the users table is reachable
+        // even when the sender belongs to a remote branch.
+        $pendingTransfer = PendingTransfer::on(DistributedDatabaseService::getHqConnection())
+            ->with(['receiverUser', 'senderUser'])
+            ->where('reference_number', $reference)
+            ->first();
 
         return view('transfers.success', compact('reference', 'pendingTransfer'));
     }
 
     /**
      * Show pending transfers for the user.
+     * Always query HQ so that transfers created on other branches are visible.
      */
     public function pending(Request $request)
     {
         $userId = $request->user()->id;
+        $hq = DistributedDatabaseService::getHqConnection();
 
         // Auto-expire old pending transfers
         $this->expireOldTransfers();
 
-        $incoming = PendingTransfer::incoming($userId)
+        $incoming = PendingTransfer::on($hq)
+            ->incoming($userId)
             ->with(['senderUser', 'senderAccount', 'receiverAccount'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $outgoing = PendingTransfer::outgoing($userId)
+        $outgoing = PendingTransfer::on($hq)
+            ->outgoing($userId)
             ->with(['receiverUser', 'senderAccount', 'receiverAccount'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -342,12 +362,18 @@ class TransferController extends Controller
             // Load receiver account from current branch
             $receiverAccount = Account::findOrFail($pendingTransfer->receiver_account_id);
 
+            // Resolve sender name safely (cross-branch: user may not exist on receiver's branch)
+            $senderName = optional($pendingTransfer->senderUser)->name
+                ?? DB::connection(DistributedDatabaseService::getHqConnection())
+                    ->table('users')->where('id', $pendingTransfer->sender_user_id)->value('name')
+                ?? 'Sender';
+
             // Execute the actual transfer with locked exchange rate
             $result = $transactionService->executeHeldTransfer(
                 $senderAccount,
                 $receiverAccount,
                 $pendingTransfer->amount,
-                $pendingTransfer->description ?: 'Transfer from ' . $pendingTransfer->senderUser->name,
+                $pendingTransfer->description ?: 'Transfer from ' . $senderName,
                 $pendingTransfer->exchange_rate
             );
 
@@ -470,10 +496,16 @@ class TransferController extends Controller
         $decimals = $currency?->decimal_places ?? 2;
         $amountFormatted = $symbol . ' ' . number_format($pendingTransfer->amount, $decimals);
 
+        // Resolve sender name safely in case senderUser is on another branch
+        $cancellerName = optional($pendingTransfer->senderUser)->name
+            ?? DB::connection(DistributedDatabaseService::getHqConnection())
+                ->table('users')->where('id', $pendingTransfer->sender_user_id)->value('name')
+            ?? 'Sender';
+
         Notification::notifyUserOnBranch($pendingTransfer->receiver_user_id, [
             'user_id' => $pendingTransfer->receiver_user_id,
             'title' => 'Transfer Cancelled',
-            'message' => "{$pendingTransfer->senderUser->name} cancelled their transfer of {$amountFormatted}.",
+            'message' => "{$cancellerName} cancelled their transfer of {$amountFormatted}.",
             'type' => 'info',
             'icon' => '↩️',
             'is_read' => false,

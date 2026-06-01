@@ -75,8 +75,14 @@ class TransactionService
                 $creditDescription .= " (Converted from {$amount} {$fromAccount->currency} @ {$exchangeRate})";
             }
 
+            // Resolve recipient name safely (may be on a different branch)
+            $toUserName = optional($toAccount->user)->name
+                ?? DB::connection(DistributedDatabaseService::getHqConnection())
+                    ->table('users')->where('id', $toAccount->user_id)->value('name')
+                ?? 'Recipient';
+
             // Debit transaction (in sender's currency)
-            $debitTxn = Transaction::create([
+            $debitTxn = Transaction::on($fromConnection)->create([
                 'account_id' => $fromAccount->id,
                 'reference_number' => $reference,
                 'type' => 'transfer_out',
@@ -87,14 +93,14 @@ class TransactionService
                 'status' => 'completed',
                 'description' => $debitDescription,
                 'recipient_account_id' => $toAccount->id,
-                'recipient_name' => $toAccount->user->name,
+                'recipient_name' => $toUserName,
                 'channel' => $channel,
                 'ip_address' => request()->ip(),
                 'completed_at' => now(),
             ]);
 
             // Ledger entry for sender (on current branch)
-            \App\Models\LedgerEntry::create([
+            \App\Models\LedgerEntry::on($fromConnection)->create([
                 'transaction_reference' => $reference,
                 'account_id' => $fromAccount->id,
                 'type' => 'debit',
@@ -114,6 +120,12 @@ class TransactionService
                 ? DistributedDatabaseService::connectionForBranch($receiverBranch)
                 : DistributedDatabaseService::getHqConnection();
 
+            // Resolve sender name safely
+            $fromUserName = optional($fromAccount->user)->name
+                ?? DB::connection(DistributedDatabaseService::getHqConnection())
+                    ->table('users')->where('id', $fromAccount->user_id)->value('name')
+                ?? 'Sender';
+
             $creditTxnData = [
                 'account_id' => $toAccount->id,
                 'reference_number' => $creditRef,
@@ -125,7 +137,7 @@ class TransactionService
                 'status' => 'completed',
                 'description' => $creditDescription,
                 'recipient_account_id' => $fromAccount->id,
-                'recipient_name' => $fromAccount->user->name,
+                'recipient_name' => $fromUserName,
                 'channel' => $channel,
                 'ip_address' => request()->ip(),
                 'completed_at' => now(),
@@ -304,8 +316,14 @@ class TransactionService
             $reference = Transaction::generateReference();
             $creditRef = Transaction::generateReference();
 
+            // Resolve recipient name safely (cross-branch)
+            $toUserName = optional($toAccount->user)->name
+                ?? DB::connection(DistributedDatabaseService::getHqConnection())
+                    ->table('users')->where('id', $toAccount->user_id)->value('name')
+                ?? 'Recipient';
+
             // Debit transaction (from held funds)
-            $debitTxn = Transaction::create([
+            $debitTxn = Transaction::on($fromConnection)->create([
                 'account_id' => $fromAccount->id,
                 'reference_number' => $reference,
                 'type' => 'transfer_out',
@@ -316,14 +334,14 @@ class TransactionService
                 'status' => 'completed',
                 'description' => $description,
                 'recipient_account_id' => $toAccount->id,
-                'recipient_name' => $toAccount->user->name,
+                'recipient_name' => $toUserName,
                 'channel' => 'web',
                 'ip_address' => request()->ip(),
                 'completed_at' => now(),
             ]);
 
             // Ledger entry for sender (on current branch)
-            \App\Models\LedgerEntry::create([
+            \App\Models\LedgerEntry::on($fromConnection)->create([
                 'transaction_reference' => $reference,
                 'account_id' => $fromAccount->id,
                 'type' => 'debit',
@@ -343,6 +361,12 @@ class TransactionService
                 ? DistributedDatabaseService::connectionForBranch($receiverBranch)
                 : DistributedDatabaseService::getHqConnection();
 
+            // Resolve sender name safely (cross-branch)
+            $fromUserName = optional($fromAccount->user)->name
+                ?? DB::connection(DistributedDatabaseService::getHqConnection())
+                    ->table('users')->where('id', $fromAccount->user_id)->value('name')
+                ?? 'Sender';
+
             $creditTxnData = [
                 'account_id' => $toAccount->id,
                 'reference_number' => $creditRef,
@@ -354,7 +378,7 @@ class TransactionService
                 'status' => 'completed',
                 'description' => $description,
                 'recipient_account_id' => $fromAccount->id,
-                'recipient_name' => $fromAccount->user->name,
+                'recipient_name' => $fromUserName,
                 'channel' => 'web',
                 'ip_address' => request()->ip(),
                 'completed_at' => now(),
