@@ -5,6 +5,7 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/validators.dart';
+import '../../l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,8 +38,10 @@ class _LoginScreenState extends State<LoginScreen>
             begin: const Offset(0, 0.2), end: Offset.zero)
         .animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOut));
     Future.delayed(const Duration(milliseconds: 100), () {
-      _fadeCtrl.forward();
-      _slideCtrl.forward();
+      if (mounted) {
+        _fadeCtrl.forward();
+        _slideCtrl.forward();
+      }
     });
   }
 
@@ -62,6 +65,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
@@ -135,9 +140,9 @@ class _LoginScreenState extends State<LoginScreen>
                         const SizedBox(height: 28),
 
                         // ── Title ─────────────────────────────
-                        const Text(
-                          'Welcome Back',
-                          style: TextStyle(
+                        Text(
+                          l10n.loginTitle,
+                          style: const TextStyle(
                             fontFamily: 'Outfit',
                             fontSize: 30,
                             fontWeight: FontWeight.w700,
@@ -147,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Sign in to your account',
+                          l10n.loginSubtitle,
                           style: TextStyle(
                             fontFamily: 'Outfit',
                             fontSize: 15,
@@ -171,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen>
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               // Email field
-                              _buildLabel('Email Address'),
+                              _buildLabel(l10n.loginEmail),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _emailController,
@@ -187,14 +192,14 @@ class _LoginScreenState extends State<LoginScreen>
                               const SizedBox(height: 20),
 
                               // Password field
-                              _buildLabel('Password'),
+                              _buildLabel(l10n.loginPassword),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
                                 textInputAction: TextInputAction.done,
                                 validator: (v) =>
-                                    Validators.required(v, 'Password'),
+                                    Validators.required(v, l10n.loginPassword),
                                 onFieldSubmitted: (_) => _onLogin(),
                                 style: const TextStyle(color: Colors.white),
                                 decoration: _inputDecoration(
@@ -219,10 +224,11 @@ class _LoginScreenState extends State<LoginScreen>
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
-                                  onPressed: () {},
+                                  onPressed: () => Navigator.of(context)
+                                      .pushNamed('/forgot-password'),
                                   child: Text(
-                                    'Forgot Password?',
-                                    style: TextStyle(
+                                    l10n.loginForgotPassword,
+                                    style: const TextStyle(
                                       color: AppColors.primary,
                                       fontSize: 13,
                                     ),
@@ -270,9 +276,9 @@ class _LoginScreenState extends State<LoginScreen>
                                                 color: Colors.white,
                                               ),
                                             )
-                                          : const Text(
-                                              'Sign In',
-                                              style: TextStyle(
+                                          : Text(
+                                              l10n.loginButton,
+                                              style: const TextStyle(
                                                 fontFamily: 'Outfit',
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w600,
@@ -297,9 +303,9 @@ class _LoginScreenState extends State<LoginScreen>
                           },
                           icon: const Icon(Icons.fingerprint,
                               color: Colors.white70),
-                          label: const Text(
-                            'Sign in with Biometrics',
-                            style: TextStyle(color: Colors.white70),
+                          label: Text(
+                            l10n.loginBiometric,
+                            style: const TextStyle(color: Colors.white70),
                           ),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(
@@ -318,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              "Don't have an account?  ",
+                              l10n.loginNoAccount + "  ",
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 14,
@@ -328,8 +334,8 @@ class _LoginScreenState extends State<LoginScreen>
                               onTap: () =>
                                   Navigator.of(context).pushNamed('/register'),
                               child: Text(
-                                'Create Account',
-                                style: TextStyle(
+                                l10n.loginRegister,
+                                style: const TextStyle(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "371218772781",
+    "project_id": "digital-bank-e4e9a",
+    "storage_bucket": "digital-bank-e4e9a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:371218772781:android:e8bcb86452b168df3f59a4",
+        "android_client_info": {
+          "package_name": "com.distributedbank.distributedbank_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpqIoGmWRtgBcI3NU62-jj6ZefqEqNYNs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

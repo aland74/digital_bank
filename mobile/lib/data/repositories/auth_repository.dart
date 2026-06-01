@@ -65,7 +65,6 @@ class AuthRepository {
         response.data,
         (data) => data is Map<String, dynamic> ? data : data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{},
       );
-      // Save token immediately — registration returns a token
       if (apiResponse.success && apiResponse.data != null) {
         final token = apiResponse.data!['token'] as String?;
         if (token != null) {
@@ -78,7 +77,7 @@ class AuthRepository {
     }
   }
 
-  /// Verify OTP — backend expects field name `otp`, not `code`.
+  /// Verify registration OTP.
   Future<ApiResponse<Map<String, dynamic>>> verifyOtp(
     String email,
     String code,
@@ -86,7 +85,7 @@ class AuthRepository {
     try {
       final response = await _api.post('/auth/verify-otp', data: {
         'email': email,
-        'otp': code, // backend validates 'otp', not 'code'
+        'code': code,
       });
       final apiResponse = ApiResponse.fromJson(
         response.data,
@@ -170,6 +169,46 @@ class AuthRepository {
         }
       }
       return apiResponse;
+    } on Exception catch (e) {
+      return ApiResponse(success: false, message: _errorMessage(e));
+    }
+  }
+
+  /// Forgot Password — sends a reset OTP to the user's email.
+  /// Returns the email and (in sandbox mode) the OTP code in the response data.
+  Future<ApiResponse<Map<String, dynamic>>> forgotPassword(String email) async {
+    try {
+      final response = await _api.post('/auth/forgot-password', data: {
+        'email': email,
+      });
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => data is Map<String, dynamic>
+            ? data
+            : data is Map
+                ? Map<String, dynamic>.from(data)
+                : <String, dynamic>{},
+      );
+    } on Exception catch (e) {
+      return ApiResponse(success: false, message: _errorMessage(e));
+    }
+  }
+
+  /// Reset Password — verifies OTP and sets a new password.
+  Future<ApiResponse<void>> resetPassword({
+    required String email,
+    required String otp,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    try {
+      final response = await _api.post('/auth/reset-password', data: {
+        'email': email,
+        'otp': otp,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      });
+      return ApiResponse.fromJson(response.data, null);
     } on Exception catch (e) {
       return ApiResponse(success: false, message: _errorMessage(e));
     }

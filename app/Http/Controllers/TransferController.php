@@ -7,7 +7,6 @@ use App\Models\PendingTransfer;
 use App\Models\Notification;
 use App\Models\AuditLog;
 use App\Models\BankSetting;
-use App\Services\AccountService;
 use App\Services\DistributedDatabaseService;
 use App\Services\ExchangeRateService;
 use App\Services\TransactionService;
@@ -301,17 +300,12 @@ class TransferController extends Controller
         // Auto-expire old pending transfers
         $this->expireOldTransfers();
 
-        // Query from HQ since pending transfers are stored there
-        $hqConnection = DistributedDatabaseService::getHqConnection();
-
-        $incoming = PendingTransfer::on($hqConnection)
-            ->incoming($userId)
+        $incoming = PendingTransfer::incoming($userId)
             ->with(['senderUser', 'senderAccount', 'receiverAccount'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $outgoing = PendingTransfer::on($hqConnection)
-            ->outgoing($userId)
+        $outgoing = PendingTransfer::outgoing($userId)
             ->with(['receiverUser', 'senderAccount', 'receiverAccount'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -324,15 +318,6 @@ class TransferController extends Controller
      */
     public function accept(Request $request, PendingTransfer $pendingTransfer, TransactionService $transactionService)
     {
-        // Load from HQ if not found on current connection
-        if (!$pendingTransfer->exists) {
-            $pendingTransfer = PendingTransfer::on(DistributedDatabaseService::getHqConnection())
-                ->find($request->route('pendingTransfer')?->id ?? $request->id);
-            if (!$pendingTransfer) {
-                return back()->with('error', 'Transfer not found.');
-            }
-        }
-
         // Only receiver can accept
         if ($pendingTransfer->receiver_user_id !== $request->user()->id) {
             abort(403);
@@ -344,10 +329,15 @@ class TransferController extends Controller
 
         try {
             // Load sender account — try sender's branch first, fall back to HQ
-            $senderAccount = AccountService::findSenderAccount(
-                $pendingTransfer->sender_account_id,
-                $pendingTransfer->sender_user_id
-            );
+            $senderBranch = DistributedDatabaseService::findUserBranchById($pendingTransfer->sender_user_id);
+            $senderConnection = $senderBranch
+                ? DistributedDatabaseService::connectionForBranch($senderBranch)
+                : DistributedDatabaseService::getHqConnection();
+            $senderAccount = Account::on($senderConnection)->find($pendingTransfer->sender_account_id);
+            if (!$senderAccount) {
+                $senderAccount = Account::on(DistributedDatabaseService::getHqConnection())
+                    ->findOrFail($pendingTransfer->sender_account_id);
+            }
 
             // Load receiver account from current branch
             $receiverAccount = Account::findOrFail($pendingTransfer->receiver_account_id);
@@ -400,15 +390,6 @@ class TransferController extends Controller
      */
     public function decline(Request $request, PendingTransfer $pendingTransfer, TransactionService $transactionService)
     {
-        // Load from HQ if not found on current connection
-        if (!$pendingTransfer->exists) {
-            $pendingTransfer = PendingTransfer::on(DistributedDatabaseService::getHqConnection())
-                ->find($request->route('pendingTransfer')?->id ?? $request->id);
-            if (!$pendingTransfer) {
-                return back()->with('error', 'Transfer not found.');
-            }
-        }
-
         if ($pendingTransfer->receiver_user_id !== $request->user()->id) {
             abort(403);
         }
@@ -419,10 +400,15 @@ class TransferController extends Controller
 
         try {
             // Load sender account — try sender's branch first, fall back to HQ
-            $senderAccount = AccountService::findSenderAccount(
-                $pendingTransfer->sender_account_id,
-                $pendingTransfer->sender_user_id
-            );
+            $senderBranch = DistributedDatabaseService::findUserBranchById($pendingTransfer->sender_user_id);
+            $senderConnection = $senderBranch
+                ? DistributedDatabaseService::connectionForBranch($senderBranch)
+                : DistributedDatabaseService::getHqConnection();
+            $senderAccount = Account::on($senderConnection)->find($pendingTransfer->sender_account_id);
+            if (!$senderAccount) {
+                $senderAccount = Account::on(DistributedDatabaseService::getHqConnection())
+                    ->findOrFail($pendingTransfer->sender_account_id);
+            }
 
             // Release held funds
             $transactionService->releaseHold($senderAccount, $pendingTransfer->amount);
@@ -457,15 +443,6 @@ class TransferController extends Controller
      */
     public function cancel(Request $request, PendingTransfer $pendingTransfer, TransactionService $transactionService)
     {
-        // Load from HQ if not found on current connection
-        if (!$pendingTransfer->exists) {
-            $pendingTransfer = PendingTransfer::on(DistributedDatabaseService::getHqConnection())
-                ->find($request->route('pendingTransfer')?->id ?? $request->id);
-            if (!$pendingTransfer) {
-                return back()->with('error', 'Transfer not found.');
-            }
-        }
-
         if ($pendingTransfer->sender_user_id !== $request->user()->id) {
             abort(403);
         }
@@ -593,6 +570,38 @@ class TransferController extends Controller
         if ($fromAccount->available_balance < $amount) {
             $currency = \App\Models\Currency::where('code', $fromCurrency)->first();
             return back()->with('error', "Insufficient balance. Available: {$currency->symbol}" . number_format($fromAccount->available_balance, $currency->decimal_places));
+        }
+
+        // Enforce $200 monthly conversion limit
+        // Only count the SOURCE (debit) side to avoid double-counting both legs of each conversion
+        $accountIds = $user->accounts()->pluck('id');
+        $totalMonthlyConversionInUsd = 0;
+
+        $usdDebitSum = \App\Models\Transaction::whereIn('account_id', $accountIds)
+            ->where('description', 'like', 'Currency conversion%')
+            ->where('type', 'transfer_out')
+            ->where('currency', 'USD')
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->sum('amount');
+        $totalMonthlyConversionInUsd += $usdDebitSum;
+
+        $iqdDebitSum = \App\Models\Transaction::whereIn('account_id', $accountIds)
+            ->where('description', 'like', 'Currency conversion%')
+            ->where('type', 'transfer_out')
+            ->where('currency', 'IQD')
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->sum('amount');
+        $totalMonthlyConversionInUsd += \App\Services\ExchangeRateService::iqdToUsd($iqdDebitSum);
+
+        $amountInUsd = $fromCurrency === 'USD' ? $amount : \App\Services\ExchangeRateService::iqdToUsd($amount);
+
+        if ($totalMonthlyConversionInUsd + $amountInUsd > 200) {
+            $availableLimit = max(0, 200 - $totalMonthlyConversionInUsd);
+            return back()->with('error', sprintf(
+                "Monthly conversion limit exceeded. You have used $%s of your $200 monthly limit. Remaining: $%s.",
+                number_format($totalMonthlyConversionInUsd, 2),
+                number_format($availableLimit, 2)
+            ));
         }
 
         try {

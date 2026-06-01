@@ -16,6 +16,9 @@ import 'screens/home/dashboard_screen.dart';
 import 'screens/transactions/transactions_screen.dart';
 import 'screens/notifications/notifications_screen.dart';
 import 'screens/profile/kyc_upload_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
+import 'screens/auth/reset_password_screen.dart';
+import 'l10n/app_localizations.dart';
 
 class App extends StatelessWidget {
   static final navigatorKey = GlobalKey<NavigatorState>();
@@ -35,15 +38,8 @@ class App extends StatelessWidget {
               darkTheme: AppTheme.darkTheme,
               themeMode: themeState.themeMode,
               locale: localeState.locale,
-              supportedLocales: const [
-                Locale('en'),
-                Locale('ckb'),
-              ],
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
               initialRoute: '/',
               routes: {
                 '/': (_) => const SplashScreen(),
@@ -53,6 +49,7 @@ class App extends StatelessWidget {
                 '/transactions': (_) => const TransactionsScreen(),
                 '/notifications': (_) => const NotificationsScreen(),
                 '/kyc-upload': (_) => const KycUploadScreen(),
+                '/forgot-password': (_) => const ForgotPasswordScreen(),
               },
               onGenerateRoute: (settings) {
                 switch (settings.name) {
@@ -60,6 +57,17 @@ class App extends StatelessWidget {
                     final email = settings.arguments as String;
                     return MaterialPageRoute(
                       builder: (_) => OtpScreen(email: email),
+                      settings: settings,
+                    );
+                  case '/reset-password':
+                    final args = settings.arguments as Map<String, dynamic>;
+                    final email = args['email'] as String;
+                    final otp = args['otp'] as String?;
+                    return MaterialPageRoute(
+                      builder: (_) => ResetPasswordScreen(
+                        email: email,
+                        sandboxOtp: otp,
+                      ),
                       settings: settings,
                     );
                   default:

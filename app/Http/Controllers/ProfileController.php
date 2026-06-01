@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
-use PragmaRX\Google2FA\Google2FA;
 
 class ProfileController extends Controller
 {
@@ -99,8 +98,6 @@ class ProfileController extends Controller
         $file = $request->file('document_file');
         $path = $file->store('kyc-documents/' . $request->user()->id, 'local');
 
-        $status = config('app.env') === 'local' ? 'verified' : 'pending';
-
         $document = KycDocument::create([
             'user_id' => $request->user()->id,
             'document_type' => $validated['document_type'],
@@ -109,18 +106,9 @@ class ProfileController extends Controller
             'file_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
-            'status' => $status,
-            'verified_at' => $status === 'verified' ? now() : null,
-            'verified_by' => $status === 'verified' ? $request->user()->id : null,
+            'status' => 'pending',
             'expiry_date' => $validated['expiry_date'] ?? null,
         ]);
-
-        if ($status === 'verified') {
-            $user = $request->user();
-            if ($user->status === 'pending_verification') {
-                $user->update(['status' => 'active']);
-            }
-        }
 
         AuditLog::log('kyc_document_uploaded', [
             'model_type' => 'KycDocument',
@@ -133,95 +121,19 @@ class ProfileController extends Controller
         ]);
 
         // Notify admins about new KYC document
-        $admins = \App\Models\User::admins()->get();
+        $admins = \App\Models\User::on(\App\Services\DistributedDatabaseService::getHqConnection())->admins()->get();
         foreach ($admins as $admin) {
-            Notification::create([
+            \App\Models\Notification::notifyUserOnBranch($admin->id, [
                 'user_id' => $admin->id,
                 'title' => 'New KYC Document',
                 'message' => "{$request->user()->name} uploaded a {$document->document_type_label} for verification.",
                 'type' => 'info',
                 'icon' => '📄',
                 'action_url' => route('admin.kyc'),
+                'is_read' => false,
             ]);
         }
 
         return back()->with('success', 'Document uploaded successfully! It will be reviewed within 24-48 hours.');
-    }
-
-    // ── Two-Factor Authentication ─────────────────────────────
-
-    public function showTwoFactor(Request $request)
-    {
-        $user = $request->user();
-        $qrCodeUrl = null;
-        $secretKey = null;
-
-        if (!$user->two_factor_enabled) {
-            $google2fa = new Google2FA();
-            $secretKey = $google2fa->generateSecretKey();
-            $qrCodeUrl = $google2fa->getQRCodeUrl(
-                config('app.name'),
-                $user->email,
-                $secretKey
-            );
-
-            // Store temporarily in session
-            session(['2fa_secret' => $secretKey]);
-        }
-
-        return view('profile.two-factor', compact('user', 'qrCodeUrl', 'secretKey'));
-    }
-
-    public function enableTwoFactor(Request $request)
-    {
-        $request->validate([
-            'code' => 'required|string|size:6',
-        ]);
-
-        $user = $request->user();
-        $secretKey = session('2fa_secret');
-
-        if (!$secretKey) {
-            return back()->withErrors(['code' => 'Session expired. Please try again.']);
-        }
-
-        $google2fa = new Google2FA();
-
-        if (!$google2fa->verifyKey($secretKey, $request->code)) {
-            return back()->withErrors(['code' => 'Invalid verification code. Please try again.']);
-        }
-
-        $user->update([
-            'two_factor_secret' => encrypt($secretKey),
-            'two_factor_enabled' => true,
-        ]);
-
-        session()->forget('2fa_secret');
-
-        AuditLog::log('two_factor_enabled', ['severity' => 'high']);
-
-        return back()->with('success', 'Two-factor authentication has been enabled successfully!');
-    }
-
-    public function disableTwoFactor(Request $request)
-    {
-        $request->validate([
-            'password' => 'required',
-        ]);
-
-        $user = $request->user();
-
-        if (!Hash::check($request->password, $user->password)) {
-            return back()->withErrors(['password' => 'Incorrect password.']);
-        }
-
-        $user->update([
-            'two_factor_secret' => null,
-            'two_factor_enabled' => false,
-        ]);
-
-        AuditLog::log('two_factor_disabled', ['severity' => 'high']);
-
-        return back()->with('success', 'Two-factor authentication has been disabled.');
     }
 }

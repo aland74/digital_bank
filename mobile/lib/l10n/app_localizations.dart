@@ -308,6 +308,66 @@ abstract class AppLocalizations {
   /// **'No recent transactions'**
   String get dashboardNoTransactions;
 
+  /// No description provided for @dashboardHello.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello, {name}'**
+  String dashboardHello(String name);
+
+  /// No description provided for @dashboardGoodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get dashboardGoodMorning;
+
+  /// No description provided for @dashboardGoodAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon'**
+  String get dashboardGoodAfternoon;
+
+  /// No description provided for @dashboardGoodEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get dashboardGoodEvening;
+
+  /// No description provided for @dashboardWelcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get dashboardWelcomeBack;
+
+  /// No description provided for @dashboardUsdBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'USD Balance'**
+  String get dashboardUsdBalance;
+
+  /// No description provided for @dashboardIqdBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'IQD Balance'**
+  String get dashboardIqdBalance;
+
+  /// No description provided for @dashboardSendMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Money'**
+  String get dashboardSendMoney;
+
+  /// No description provided for @dashboardConvert.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert'**
+  String get dashboardConvert;
+
+  /// No description provided for @dashboardLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading dashboard...'**
+  String get dashboardLoading;
+
   /// No description provided for @navHome.
   ///
   /// In en, this message translates to:
@@ -859,6 +919,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rejected'**
   String get statusRejected;
+
+  /// No description provided for @registerBranchRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a branch'**
+  String get registerBranchRequired;
+
+  /// No description provided for @registerPasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get registerPasswordMismatch;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot Password?'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email address and we\'ll send you a secure code to reset your password.'**
+  String get forgotPasswordSubtitle;
+
+  /// No description provided for @forgotPasswordSendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Reset Code'**
+  String get forgotPasswordSendCode;
+
+  /// No description provided for @forgotPasswordBackToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Sign In'**
+  String get forgotPasswordBackToLogin;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @resetPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code and your new password.'**
+  String get resetPasswordSubtitle;
+
+  /// No description provided for @resetPasswordSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset successfully! Sign in with your new password.'**
+  String get resetPasswordSuccess;
+
+  /// No description provided for @resetPasswordNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get resetPasswordNew;
+
+  /// No description provided for @resetPasswordConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm New Password'**
+  String get resetPasswordConfirm;
+
+  /// No description provided for @resetPasswordButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get resetPasswordButton;
+
+  /// No description provided for @resetPasswordResend.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend Reset Code'**
+  String get resetPasswordResend;
+
+  /// No description provided for @resetPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Min 8 chars, mixed case, numbers'**
+  String get resetPasswordHint;
+
+  /// No description provided for @resetPasswordConfirmHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your password'**
+  String get resetPasswordConfirmHint;
+
+  /// No description provided for @resetCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Code (OTP)'**
+  String get resetCodeLabel;
+
+  /// No description provided for @resetCodeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the reset code'**
+  String get resetCodeRequired;
+
+  /// No description provided for @resetCodeLengthError.
+  ///
+  /// In en, this message translates to:
+  /// **'Code must be 6 digits'**
+  String get resetCodeLengthError;
+
+  /// No description provided for @resetPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a new password'**
+  String get resetPasswordRequired;
+
+  /// No description provided for @resetPasswordMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters'**
+  String get resetPasswordMinLength;
+
+  /// No description provided for @resetPasswordUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Must include an uppercase letter'**
+  String get resetPasswordUppercase;
+
+  /// No description provided for @resetPasswordLowercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Must include a lowercase letter'**
+  String get resetPasswordLowercase;
+
+  /// No description provided for @resetPasswordNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Must include a number'**
+  String get resetPasswordNumber;
+
+  /// No description provided for @resetPasswordConfirmRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get resetPasswordConfirmRequired;
+
+  /// No description provided for @resetPasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get resetPasswordMismatch;
+
+  /// No description provided for @sandboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer Sandbox'**
+  String get sandboxTitle;
+
+  /// No description provided for @sandboxOtpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your OTP: '**
+  String get sandboxOtpLabel;
+
+  /// No description provided for @otpTwoFactorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-Factor Verification'**
+  String get otpTwoFactorTitle;
+
+  /// No description provided for @otpSentToEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code sent to\n{email}'**
+  String otpSentToEmail(String email);
+
+  /// No description provided for @otpResentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code resent successfully!'**
+  String get otpResentSuccess;
+
+  /// No description provided for @otpSecurityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Never share your verification code with anyone, including bank staff.'**
+  String get otpSecurityNote;
+
+  /// No description provided for @otpResendInSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code in {seconds}s'**
+  String otpResendInSeconds(String seconds);
 }
 
 class _AppLocalizationsDelegate

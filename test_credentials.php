@@ -13,7 +13,7 @@ echo "DB_CONNECTION env: " . env('DB_CONNECTION') . "\n";
 
 foreach (['sqlite_hq', 'mysql_hq'] as $conn) {
     try {
-        $user = DB::connection($conn)->table('users')->where('email', 'admin@distributedbank.com')->first();
+        $user = DB::connection($conn)->table('users')->where('email', 'admin@nexusbank.com')->first();
         if ($user) {
             $check = Hash::check('Admin@123456', $user->password);
             echo "Connection '$conn' check: " . ($check ? "SUCCESS ✅" : "FAILED ❌") . "\n";

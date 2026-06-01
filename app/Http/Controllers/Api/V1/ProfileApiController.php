@@ -37,8 +37,14 @@ class ProfileApiController extends Controller
             'date_of_birth' => 'sometimes|date',
             'branch' => 'sometimes|string|nullable|max:100',
         ]);
-        $request->user()->update($v);
-        return response()->json(['message' => 'Profile updated.']);
+        $user = $request->user();
+        $user->update($v);
+        $user->refresh();
+        $profileData = $user->only(['id', 'name', 'email', 'phone', 'date_of_birth', 'address_line_1', 'address_line_2', 'city', 'state', 'country', 'postal_code', 'status', 'two_factor_enabled', 'last_login_at', 'branch']);
+        $profileData['branch_display'] = $user->branch_display_name ?? ($user->branch ? ucfirst($user->branch) : 'N/A');
+        $profileData['role'] = $user->role ?? 'customer';
+        $profileData['is_kyc_verified'] = $user->isKycVerified();
+        return response()->json(['message' => 'Profile updated.', 'profile' => $profileData]);
     }
 
     /**
@@ -64,14 +70,15 @@ class ProfileApiController extends Controller
     {
         $validated = $request->validate([
             'current_password' => 'required',
-            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+            'new_password' => ['required', 'min:8', Password::min(8)->mixedCase()->numbers()->symbols()],
+            'confirm_password' => 'required|same:new_password',
         ]);
 
         if (!Hash::check($validated['current_password'], $request->user()->password)) {
             return response()->json(['message' => 'Current password is incorrect.'], 422);
         }
 
-        $request->user()->update(['password' => $validated['password']]);
+        $request->user()->update(['password' => $validated['new_password']]);
 
         AuditLog::log('password_changed', ['severity' => 'high']);
 
@@ -93,8 +100,6 @@ class ProfileApiController extends Controller
         $file = $request->file('document_file');
         $path = $file->store('kyc-documents/' . $request->user()->id, 'local');
 
-        $status = config('app.env') === 'local' ? 'verified' : 'pending';
-
         $document = KycDocument::create([
             'user_id' => $request->user()->id,
             'document_type' => $validated['document_type'],
@@ -103,18 +108,9 @@ class ProfileApiController extends Controller
             'file_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
-            'status' => $status,
-            'verified_at' => $status === 'verified' ? now() : null,
-            'verified_by' => $status === 'verified' ? $request->user()->id : null,
+            'status' => 'pending',
             'expiry_date' => $validated['expiry_date'] ?? null,
         ]);
-
-        if ($status === 'verified') {
-            $user = $request->user();
-            if ($user->status === 'pending_verification') {
-                $user->update(['status' => 'active']);
-            }
-        }
 
         AuditLog::log('kyc_document_uploaded', [
             'model_type' => 'KycDocument',
@@ -127,14 +123,16 @@ class ProfileApiController extends Controller
         ]);
 
         // Notify admins about new KYC document
-        $admins = \App\Models\User::admins()->get();
+        $admins = \App\Models\User::on(\App\Services\DistributedDatabaseService::getHqConnection())->admins()->get();
         foreach ($admins as $admin) {
-            Notification::create([
+            \App\Models\Notification::notifyUserOnBranch($admin->id, [
                 'user_id' => $admin->id,
                 'title' => 'New KYC Document',
                 'message' => "{$request->user()->name} uploaded a {$document->document_type_label} for verification.",
                 'type' => 'info',
                 'icon' => '📄',
+                'action_url' => route('admin.kyc'),
+                'is_read' => false,
             ]);
         }
 

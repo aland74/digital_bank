@@ -40,6 +40,24 @@
   "dashboardNoAccounts": "No accounts yet",
   "dashboardNoTransactions": "No recent transactions",
 
+  "dashboardHello": "Hello, {name}",
+  "@dashboardHello": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardGoodMorning": "Good morning",
+  "dashboardGoodAfternoon": "Good afternoon",
+  "dashboardGoodEvening": "Good evening",
+  "dashboardWelcomeBack": "Welcome back",
+  "dashboardUsdBalance": "USD Balance",
+  "dashboardIqdBalance": "IQD Balance",
+  "dashboardSendMoney": "Send Money",
+  "dashboardConvert": "Convert",
+  "dashboardLoading": "Loading dashboard...",
+
   "navHome": "Home",
   "navCards": "Cards",
   "navTransfer": "Transfer",
@@ -142,5 +160,53 @@
   "statusCancelled": "Cancelled",
   "statusFrozen": "Frozen",
   "statusApproved": "Approved",
-  "statusRejected": "Rejected"
+  "statusRejected": "Rejected",
+
+  "registerBranchRequired": "Please select a branch",
+  "registerPasswordMismatch": "Passwords do not match",
+
+  "forgotPasswordTitle": "Forgot Password?",
+  "forgotPasswordSubtitle": "Enter your email address and we'll send you a secure code to reset your password.",
+  "forgotPasswordSendCode": "Send Reset Code",
+  "forgotPasswordBackToLogin": "Back to Sign In",
+  "resetPasswordTitle": "Reset Password",
+  "resetPasswordSubtitle": "Enter the 6-digit code and your new password.",
+  "resetPasswordSuccess": "Password reset successfully! Sign in with your new password.",
+  "resetPasswordNew": "New Password",
+  "resetPasswordConfirm": "Confirm New Password",
+  "resetPasswordButton": "Reset Password",
+  "resetPasswordResend": "Resend Reset Code",
+  "resetPasswordHint": "Min 8 chars, mixed case, numbers",
+  "resetPasswordConfirmHint": "Confirm your password",
+  "resetCodeLabel": "Reset Code (OTP)",
+  "resetCodeRequired": "Please enter the reset code",
+  "resetCodeLengthError": "Code must be 6 digits",
+  "resetPasswordRequired": "Please enter a new password",
+  "resetPasswordMinLength": "Password must be at least 8 characters",
+  "resetPasswordUppercase": "Must include an uppercase letter",
+  "resetPasswordLowercase": "Must include a lowercase letter",
+  "resetPasswordNumber": "Must include a number",
+  "resetPasswordConfirmRequired": "Please confirm your password",
+  "resetPasswordMismatch": "Passwords do not match",
+  "sandboxTitle": "Developer Sandbox",
+  "sandboxOtpLabel": "Your OTP: ",
+  "otpTwoFactorTitle": "Two-Factor Verification",
+  "otpSentToEmail": "Enter the 6-digit code sent to\n{email}",
+  "@otpSentToEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "otpResentSuccess": "Verification code resent successfully!",
+  "otpSecurityNote": "Never share your verification code with anyone, including bank staff.",
+  "otpResendInSeconds": "Resend code in {seconds}s",
+  "@otpResendInSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  }
 }

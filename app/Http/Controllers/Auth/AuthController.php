@@ -125,16 +125,6 @@ class AuthController extends Controller
                     Log::warning("Login: Failed to log audit event: " . $e->getMessage());
                 }
 
-                // ── Step 6: Check 2FA for admin accounts ──
-                if ($user->isAdmin() && $user->two_factor_enabled) {
-                    session([
-                        '2fa_user_id' => $user->id,
-                        '2fa_remember' => $request->boolean('remember'),
-                    ]);
-                    Auth::logout();
-                    return redirect()->route('auth.2fa.verify');
-                }
-
                 if ($user->isAdmin()) {
                     return redirect()->intended(route('admin.dashboard'));
                 }
@@ -285,16 +275,11 @@ class AuthController extends Controller
             return redirect()->route('login');
         }
 
-        // In debug mode only, show OTP as flash message for developer convenience
-        if (config('app.debug')) {
-            $cacheKey = 'otp_' . $user->id;
-            $otp = Cache::get($cacheKey);
-            if ($otp) {
-                session()->flash('debug_otp', $otp);
-            }
-        }
+        // Get the active OTP from cache for developer convenience
+        $cacheKey = 'otp_' . $user->id;
+        $otp = Cache::get($cacheKey);
 
-        return view('auth.verify-otp', compact('user'));
+        return view('auth.verify-otp', compact('user', 'otp'));
     }
 
     public function verifyOtp(Request $request, OtpService $otpService, AccountService $accountService)
@@ -669,81 +654,6 @@ class AuthController extends Controller
             ->with('success', 'Your Google profile has been connected! Please enter the 6-digit verification code sent to your email.');
     }
 
-    // ── Two-Factor Authentication Verification ──────────────────
-
-    public function show2faVerify()
-    {
-        if (!session('2fa_user_id')) {
-            return redirect()->route('login');
-        }
-
-        return view('auth.verify-2fa');
-    }
-
-    public function verify2fa(Request $request)
-    {
-        $userId = session('2fa_user_id');
-        if (!$userId) {
-            return redirect()->route('login');
-        }
-
-        $request->validate([
-            'code' => 'required|string|size:6',
-        ]);
-
-        // Find user in HQ
-        $user = User::on(DistributedDatabaseService::getHqConnection())->find($userId);
-        if (!$user) {
-            // Try branches
-            foreach (DistributedDatabaseService::branchDisplayNames() as $branchKey => $branchName) {
-                try {
-                    $connection = DistributedDatabaseService::connectionForBranch($branchKey);
-                    $user = User::on($connection)->find($userId);
-                    if ($user) break;
-                } catch (\Exception $e) {}
-            }
-        }
-
-        if (!$user || !$user->two_factor_enabled || !$user->two_factor_secret) {
-            session()->forget('2fa_user_id');
-            return redirect()->route('login')->withErrors(['code' => 'Invalid session. Please try again.']);
-        }
-
-        $google2fa = new \PragmaRX\Google2FA\Google2FA();
-        $secret = decrypt($user->two_factor_secret);
-
-        if (!$google2fa->verifyKey($secret, $request->code)) {
-            return back()->withErrors(['code' => 'Invalid verification code. Please try again.']);
-        }
-
-        // Log the user in
-        Auth::login($user, session('2fa_remember', false));
-        $request->session()->regenerate();
-        session()->forget(['2fa_user_id', '2fa_remember']);
-
-        // Switch to branch DB
-        if (!empty($user->branch)) {
-            try {
-                $branchConn = DistributedDatabaseService::connectionForBranch($user->branch);
-                if (DistributedDatabaseService::isConnectionOnline($branchConn)) {
-                    DistributedDatabaseService::setActiveBranch($user->branch);
-                }
-            } catch (\Exception $e) {}
-        }
-
-        try {
-            $user->update([
-                'last_login_at' => now(),
-                'last_login_ip' => $request->ip(),
-                'failed_login_attempts' => 0,
-                'locked_until' => null,
-            ]);
-            AuditLog::log('login', ['severity' => 'low', 'details' => '2FA verified']);
-        } catch (\Exception $e) {}
-
-        return redirect()->intended(route('admin.dashboard'));
-    }
-
     public function logout(Request $request)
     {
         try {
@@ -757,5 +667,121 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    public function showForgotPassword()
+    {
+        return view('auth.forgot-password');
+    }
+
+    public function forgotPassword(Request $request, OtpService $otpService)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $normalizedEmail = strtolower(trim($request->email));
+        $user = null;
+
+        $branch = \App\Services\DistributedDatabaseService::findUserBranch($normalizedEmail);
+        if ($branch) {
+            try {
+                \App\Services\DistributedDatabaseService::setActiveBranch($branch);
+                $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
+            } catch (\Exception $e) {}
+        } else {
+            try {
+                \App\Services\DistributedDatabaseService::setHQ();
+                $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
+            } catch (\Exception $e) {}
+        }
+
+        if (!$user) {
+            return back()->withErrors(['email' => 'We could not find a user with that email address.']);
+        }
+
+        $otp = $otpService->generateResetOtp($user);
+        session(['reset_user_id' => $user->id]);
+
+        return redirect()->route('password.reset')
+            ->with('success', 'A password reset code has been sent to your email address.');
+    }
+
+    public function showResetPassword()
+    {
+        $userId = session('reset_user_id');
+        if (!$userId) {
+            return redirect()->route('password.request');
+        }
+
+        $branch = \App\Services\DistributedDatabaseService::findUserBranchById($userId);
+        if ($branch) {
+            try {
+                \App\Services\DistributedDatabaseService::setActiveBranch($branch);
+            } catch (\Exception $e) {}
+        } else {
+            \App\Services\DistributedDatabaseService::setHQ();
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            session()->forget('reset_user_id');
+            return redirect()->route('password.request');
+        }
+
+        $cacheKey = 'password_reset_otp_' . $user->id;
+        $otp = \Illuminate\Support\Facades\Cache::get($cacheKey);
+
+        return view('auth.reset-password', compact('user', 'otp'));
+    }
+
+    public function resetPassword(Request $request, OtpService $otpService)
+    {
+        $userId = session('reset_user_id');
+        if (!$userId) {
+            return redirect()->route('password.request');
+        }
+
+        $request->validate([
+            'otp' => 'required|string|size:6',
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+        ]);
+
+        $branch = \App\Services\DistributedDatabaseService::findUserBranchById($userId);
+        if ($branch) {
+            try {
+                \App\Services\DistributedDatabaseService::setActiveBranch($branch);
+            } catch (\Exception $e) {}
+        } else {
+            \App\Services\DistributedDatabaseService::setHQ();
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            session()->forget('reset_user_id');
+            return redirect()->route('password.request');
+        }
+
+        if (!$otpService->verifyResetOtp($user, $request->otp)) {
+            return back()->withErrors(['otp' => 'The reset code is invalid or has expired.']);
+        }
+
+        $user->update([
+            'password' => $request->password,
+        ]);
+
+        try {
+            AuditLog::create([
+                'user_id' => $user->id,
+                'action' => 'password_reset_success',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'severity' => 'high',
+            ]);
+        } catch (\Exception $e) {}
+
+        session()->forget('reset_user_id');
+
+        return redirect()->route('login')->with('success', 'Your password has been reset successfully! You can now log in.');
     }
 }

@@ -5,15 +5,15 @@ $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 use Illuminate\Support\Facades\DB;
 
-$conns = ['mysql_hq', 'sqlite_hq', 'sqlite_erbil', 'sqlite_sulaimaniyah', 'sqlite_duhok'];
+$conns = ['mysql_hq', 'mysql_erbil', 'mysql_sulaimaniyah', 'mysql_duhok'];
 foreach ($conns as $conn) {
     try {
         $count = DB::connection($conn)->table('users')->count();
         echo "$conn: $count users\n";
         if ($count > 0) {
-            $users = DB::connection($conn)->table('users')->select('id', 'name', 'email', 'role')->get();
+            $users = DB::connection($conn)->table('users')->select('id', 'name', 'email', 'branch', 'role')->get();
             foreach ($users as $u) {
-                echo "  - #{$u->id} | {$u->name} | {$u->email} | {$u->role}\n";
+                echo "  - #{$u->id} | {$u->name} | {$u->email} | branch={$u->branch} | {$u->role}\n";
             }
         }
     } catch (\Exception $e) {

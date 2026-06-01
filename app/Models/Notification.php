@@ -23,128 +23,100 @@ class Notification extends Model
     public function getTranslatedMessageAttribute(): string
     {
         $msg = $this->message;
-        $data = $this->data ?? [];
+        if (app()->getLocale() !== 'ckb') return $msg;
 
-        // Map notification types to translation keys
-        $translationKey = $this->detectTranslationKey($msg, $data);
+        $translated = __($msg);
+        if ($translated !== $msg) return $translated;
 
-        if ($translationKey) {
-            $translated = __('notifications.' . $translationKey['key'], $translationKey['params']);
-            if ($translated !== 'notifications.' . $translationKey['key']) {
-                return $translated;
-            }
+        if (preg_match('/Your (.+?) (.+?) card has been activated and is ready to use\./', $msg, $matches)) {
+            return "کارتەکەت لە جۆری {$matches[1]} {$matches[2]} چالاککراوە و ئامادەیە بۆ بەکارهێنان.";
         }
-
-        // Fallback: try direct translation
-        $direct = __($msg);
-        return $direct !== $msg ? $direct : $msg;
-    }
-
-    /**
-     * Detect the translation key and parameters from a notification message.
-     */
-    private function detectTranslationKey(string $msg, array $data): ?array
-    {
-        // Card notifications
-        if (preg_match('/Your (.+?) (.+?) card has been activated and is ready to use\./', $msg, $m)) {
-            return ['key' => 'card_activated', 'params' => ['type' => $m[1], 'brand' => $m[2], 'last4' => '']];
+        if (preg_match('/Your card ending in (\w+) has been frozen\./', $msg, $matches)) {
+            return "کارتەکەت کە کۆتایی دێت بە {$matches[1]} سڕکراوە.";
         }
-        if (preg_match('/Your card ending in (\w+) has been frozen due to (\d+) incorrect PIN attempts/', $msg, $m)) {
-            return ['key' => 'card_pin_frozen', 'params' => ['last4' => $m[1], 'attempts' => $m[2]]];
+        if (preg_match('/The PIN for your card ending in (\w+) has been changed successfully\./', $msg, $matches)) {
+            return "پین کۆدی کارتەکەت کە کۆتایی دێت بە {$matches[1]} بە سەرکەوتوویی گۆڕدرا.";
         }
-        if (preg_match('/Your card ending in (\w+) has been frozen\./', $msg, $m)) {
-            return ['key' => 'card_frozen', 'params' => ['last4' => $m[1]]];
+        if (preg_match('/Your (.+?) loan application for \$([0-9.,]+) has been submitted and is under review\./', $msg, $matches)) {
+            return "داواکاری قەرزەکەت لە جۆری {$matches[1]} بە بڕی \${$matches[2]} نێردراوە و لە ژێر پێداچوونەوەدایە.";
         }
-        if (preg_match('/The PIN for your card ending in (\w+) has been changed/', $msg, $m)) {
-            return ['key' => 'card_pin_changed', 'params' => ['last4' => $m[1]]];
+        if (preg_match('/Your transfer of \$([0-9.,]+) to (.+?) is pending acceptance\. Funds have been held\./', $msg, $matches)) {
+            return "گواستنەوەکەت بە بڕی \${$matches[1]} بۆ {$matches[2]} هەڵواسراوە بۆ پەسەندکردن. پارەکە هێڵراوەتەوە.";
         }
-        if (preg_match('/Your card ending in (\w+) has been activated/', $msg, $m)) {
-            return ['key' => 'card_activated_last4', 'params' => ['last4' => $m[1]]];
+        if (preg_match('/(.+?) cancelled their transfer of \$([0-9.,]+)\./', $msg, $matches)) {
+            return "{$matches[1]} گواستنەوەکەی بە بڕی \${$matches[2]} هەڵوەشاندەوە.";
         }
-        if (preg_match('/Your card has been created but is inactive/', $msg)) {
-            return ['key' => 'card_created_inactive', 'params' => []];
+        if (preg_match('/Your pending transfer of \$([0-9.,]+) to (.+?) has expired\. Funds have been released\./', $msg, $matches)) {
+            return "گواستنەوە هەڵواسراوەکەت بە بڕی \${$matches[1]} بۆ {$matches[2]} بەسەرچووە. پارەکە ئازادکراوە.";
         }
-
-        // Loan notifications
-        if (preg_match('/Your (.+?) loan of \$([0-9.,]+) has been approved/', $msg, $m)) {
-            return ['key' => 'loan_approved', 'params' => ['type' => $m[1], 'amount' => $m[2]]];
+        if (preg_match('/Your account has been created at the (.+?) branch\. To activate all features, please upload your identity documents\./', $msg, $matches)) {
+            return "هەژمارەکەت لە لقی {$matches[1]} دروستکراوە. بۆ چالاککردنی هەموو تایبەتمەندییەکان، تکایە بەڵگەنامەکانی ناسنامەت باربکە.";
         }
-        if (preg_match('/Your (.+?) loan application has been rejected\. Reason: (.+)/', $msg, $m)) {
-            return ['key' => 'loan_rejected', 'params' => ['type' => $m[1], 'reason' => $m[2]]];
+        if (preg_match('/Your card ending in (\w+) has been frozen due to (\d+) incorrect PIN attempts\. Please contact support\./', $msg, $matches)) {
+            return "کارتەکەت کە کۆتایی دێت بە {$matches[1]} سڕکراوە بەهۆی {$matches[2]} هەوڵی هەڵەی پین کۆد. تکایە پەیوەندی بە پاڵپشتییەوە بکە.";
         }
-        if (preg_match('/Your (.+?) loan application for \$([0-9.,]+) has been submitted/', $msg, $m)) {
-            return ['key' => 'loan_submitted', 'params' => ['type' => $m[1], 'amount' => $m[2]]];
+        if (preg_match('/Your (.+?) was rejected: (.+?)\. Please re-upload\./', $msg, $matches)) {
+            return "بەڵگەنامەکەت ({$matches[1]}) ڕەتکرایەوە: {$matches[2]}. تکایە دووبارە باری بکەرەوە.";
         }
-        if (preg_match('/Your loan application for \$([0-9.,]+) could not be processed/', $msg, $m)) {
-            return ['key' => 'loan_rejected_reserves', 'params' => ['amount' => $m[1]]];
+        if (preg_match('/Your (.+?) has been verified\.(.*)/', $msg, $matches)) {
+            $extra = trim($matches[2]);
+            $kurdishExtra = "";
+            if ($extra == "Please also upload your Passport.") $kurdishExtra = " تکایە پاسپۆرتەکەشت باربکە.";
+            if ($extra == "Please also upload your National ID.") $kurdishExtra = " تکایە پێناسەی نیشتیمانیشت باربکە.";
+            if ($extra == "Please also upload your Passport. Please also upload your National ID.") $kurdishExtra = " تکایە پاسپۆرت و پێناسەی نیشتیمانیشت باربکە.";
+            return "بەڵگەنامەکەت ({$matches[1]}) پەسەندکرا.{$kurdishExtra}";
         }
-
-        // Transfer notifications
-        if (preg_match('/(.+?) wants to send you \$([0-9.,]+)\./', $msg, $m)) {
-            return ['key' => 'transfer_pending', 'params' => ['name' => $m[1], 'amount' => $m[2]]];
+        if (preg_match('/Your identity has been verified and your account is now fully active\. All features are unlocked\./', $msg, $matches)) {
+            return "ناسنامەکەت پەسەندکرا و هەژمارەکەت ئێستا بە تەواوی چالاکە. هەموو تایبەتمەندییەکان کراونەتەوە.";
         }
-        if (preg_match('/(.+?) accepted your transfer of \$([0-9.,]+)/', $msg, $m)) {
-            return ['key' => 'transfer_accepted', 'params' => ['name' => $m[1], 'amount' => $m[2]]];
+        if (preg_match('/Both your Passport and National ID have been verified\. Your account is now fully active!/', $msg, $matches)) {
+            return "هەردوو پاسپۆرت و پێناسەی نیشتیمانیت پەسەندکراون. هەژمارەکەت ئێستا بە تەواوی چالاکە!";
         }
-        if (preg_match('/(.+?) declined your transfer of \$([0-9.,]+)/', $msg, $m)) {
-            return ['key' => 'transfer_declined', 'params' => ['name' => $m[1], 'amount' => $m[2]]];
+        if (preg_match('/Your (.+?) loan of \$([0-9.,]+) has been approved!/', $msg, $matches)) {
+            return "قەرزەکەت لە جۆری {$matches[1]} بە بڕی \${$matches[2]} پەسەندکرا!";
         }
-        if (preg_match('/(.+?) cancelled their transfer of \$([0-9.,]+)/', $msg, $m)) {
-            return ['key' => 'transfer_cancelled', 'params' => ['name' => $m[1], 'amount' => $m[2]]];
+        if (preg_match('/Your (.+?) loan application has been rejected\. Reason: (.+)/', $msg, $matches)) {
+            return "داواکاری قەرزەکەت لە جۆری {$matches[1]} ڕەتکرایەوە. هۆکار: {$matches[2]}";
         }
-        if (preg_match('/Your pending transfer of \$([0-9.,]+) to (.+?) has expired/', $msg, $m)) {
-            return ['key' => 'transfer_expired', 'params' => ['amount' => $m[1], 'name' => $m[2]]];
+        if (preg_match('/(.+?) applied for a (.+?) loan of \$([0-9.,]+)\./', $msg, $matches)) {
+            return "{$matches[1]} داواکاری پێشکەشکردووە بۆ قەرزێکی {$matches[2]} بە بڕی \${$matches[3]}.";
         }
-        if (preg_match('/You received \$([0-9.,]+) from (.+?)\./', $msg, $m)) {
-            return ['key' => 'transfer_received', 'params' => ['amount' => $m[1], 'name' => $m[2]]];
+        if (preg_match('/(.+?) uploaded a (.+?) for verification\./', $msg, $matches)) {
+            return "{$matches[1]} بەڵگەنامەیەکی {$matches[2]}ی بارکردووە بۆ پەسەندکردن.";
         }
-
-        // KYC notifications
-        if (preg_match('/Your account has been created at the (.+?) branch/', $msg, $m)) {
-            return ['key' => 'kyc_account_created', 'params' => ['branch' => $m[1]]];
+        if (preg_match('/You received \$([0-9.,]+) from (.+?)\./', $msg, $matches)) {
+            return "بڕی \${$matches[1]} لەلایەن {$matches[2]}وە پێگەیشت.";
         }
-        if (preg_match('/Your (.+?) was rejected: (.+?)\. Please re-upload/', $msg, $m)) {
-            return ['key' => 'kyc_document_rejected', 'params' => ['type' => $m[1], 'reason' => $m[2]]];
+        if (preg_match('/(.+?) accepted your transfer of \$([0-9.,]+)\./', $msg, $matches)) {
+            return "{$matches[1]} گواستنەوەکەی بە بڕی \${$matches[2]} پەسەندکرد.";
         }
-        if (preg_match('/Your identity has been verified and your account is now fully active/', $msg)) {
-            return ['key' => 'kyc_identity_verified', 'params' => []];
+        if (preg_match('/(.+?) declined your transfer of \$([0-9.,]+)\. Funds have been released\./', $msg, $matches)) {
+            return "{$matches[1]} گواستنەوەکەی بە بڕی \${$matches[2]} ڕەتکردەوە. پارەکە ئازادکراوە.";
         }
-        if (preg_match('/Both your Passport and National ID have been verified/', $msg)) {
-            return ['key' => 'kyc_both_verified', 'params' => []];
+        if (preg_match('/(.+?) wants to send you \$([0-9.,]+)\. Accept or decline this transfer\./', $msg, $matches)) {
+            return "{$matches[1]} دەیەوێت \${$matches[2]} بنێرێت بۆت. ئەم گواستنەوەیە پەسەند بکە یان ڕەتبکەرەوە.";
         }
-        if (preg_match('/Your (.+?) has been verified\.(.*)/', $msg, $m)) {
-            $extra = trim($m[2]);
-            $key = 'kyc_document_verified';
-            $suffix = '';
-            if (str_contains($extra, 'Passport') && str_contains($extra, 'National ID')) {
-                $suffix = 'kyc_both_needed';
-            } elseif (str_contains($extra, 'Passport')) {
-                $suffix = 'kyc_passport_needed';
-            } elseif (str_contains($extra, 'National ID')) {
-                $suffix = 'kyc_national_id_needed';
-            }
-            $result = __('notifications.' . $key, ['type' => $m[1]]);
-            if ($suffix) {
-                $result .= __('notifications.' . $suffix);
-            }
-            return ['key' => $key, 'params' => ['type' => $m[1]]]; // Will be handled specially
+        if (preg_match('/Your loan application for \$([0-9.,]+) could not be processed at this time\.(.*)/', $msg, $matches)) {
+            return "داواکاری قەرزەکەت بە بڕی \${$matches[1]} لەم کاتەدا ناتوانرێت جێبەجێبکرێت. توانای قەرزدانی بانک بە کاتی گەیشتووەتە ئەوپەڕی. تکایە دواتر هەوڵبدەرەوە.";
+        }
+        if (preg_match('/Your card has been created but is inactive\.(.*)/', $msg, $matches)) {
+            return "کارتەکەت دروستکراوە بەڵام ناچالاکە. تکایە پاسپۆرت و پێناسەی نیشتیمانیت باربکە بۆ چالاککردنی.";
+        }
+        if (preg_match('/Your card ending in (\w+) has been activated and is ready to use\./', $msg, $matches)) {
+            return "کارتەکەت کە کۆتایی دێت بە {$matches[1]} چالاککراوە و ئامادەیە بۆ بەکارهێنان.";
         }
 
-        // Cash/ATM notifications
-        if (preg_match('/You have successfully withdrawn \$([0-9.,]+)/', $msg, $m)) {
-            return ['key' => 'cash_withdrawal', 'params' => ['amount' => $m[1]]];
+        if (preg_match('/You have successfully withdrawn \$([0-9.,]+) from your account\./', $msg, $matches)) {
+            return "بە سەرکەوتوویی بڕی \${$matches[1]} ت لە هەژمارەکەت ڕاکێشا.";
         }
-        if (preg_match('/A cash deposit of \$([0-9.,]+) has been added/', $msg, $m)) {
-            return ['key' => 'cash_deposit', 'params' => ['amount' => $m[1]]];
+        if (preg_match('/A cash deposit of \$([0-9.,]+) has been added to your account\./', $msg, $matches)) {
+            return "بڕی \${$matches[1]} وەک کاش خرایە سەر هەژمارەکەت.";
         }
-        if (preg_match('/A cash withdrawal of \$([0-9.,]+) was processed/', $msg, $m)) {
-            return ['key' => 'branch_withdrawal', 'params' => ['amount' => $m[1]]];
-        }
-        if (preg_match('/A deposit of \$([0-9.,]+) was made to your account/', $msg, $m)) {
-            return ['key' => 'branch_deposit', 'params' => ['amount' => $m[1], 'account' => '']];
+        if (preg_match('/A cash withdrawal of \$([0-9.,]+) was processed at the branch\./', $msg, $matches)) {
+            return "بڕی \${$matches[1]} کاش لە لقەکەمان ڕاکێشرا.";
         }
 
-        return null;
+        return $msg;
     }
 
     protected function casts(): array
@@ -261,6 +233,14 @@ class Notification extends Model
         if ($branch) {
             $branchConnection = DistributedDatabaseService::connectionForBranch($branch);
             try {
+                // Ensure the user exists on that branch database to prevent foreign key errors
+                $userOnHq = DB::connection(DistributedDatabaseService::getHqConnection())
+                    ->table('users')
+                    ->find($userId);
+                if ($userOnHq) {
+                    DB::connection($branchConnection)->table('users')->insertOrIgnore((array) $userOnHq);
+                }
+
                 DB::connection($branchConnection)->table('notifications')->insert(array_merge($data, [
                     'created_at' => now(),
                     'updated_at' => now(),

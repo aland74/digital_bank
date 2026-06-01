@@ -1,6 +1,6 @@
 {
   "@@locale": "ckb",
-  "appTitle": "نێکساس بانک",
+  "appTitle": "بانکی دابەشکراو",
   "appTagline": "بانکاری دیجیتاڵی پریمیەم",
 
   "loginTitle": "بەخێربێیتەوە",
@@ -14,7 +14,7 @@
   "loginBiometric": "چوونە ژوورەوە بایۆمێتریک",
 
   "registerTitle": "دروستکردنی هەژمار",
-  "registerSubtitle": "ئەمڕۆ ببە بەندی نێکساس بانک",
+  "registerSubtitle": "ئەمڕۆ ببە بەندێکی بانکی دابەشکراو",
   "registerName": "ناوی تەواو",
   "registerEmail": "ئیمەیڵ",
   "registerPhone": "ژمارەی مۆبایل",
@@ -39,6 +39,24 @@
   "dashboardViewAll": "پیشاندانی هەموو",
   "dashboardNoAccounts": "هیچ هەژمارێک نییە",
   "dashboardNoTransactions": "هیچ مەوەلەیەکی ئەم دواییانە نییە",
+
+  "dashboardHello": "سڵاو، {name}",
+  "@dashboardHello": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardGoodMorning": "بەیانیت باش",
+  "dashboardGoodAfternoon": "ڕۆژت باش",
+  "dashboardGoodEvening": "ئێوارەت باش",
+  "dashboardWelcomeBack": "بەخێربێیتەوە",
+  "dashboardUsdBalance": "باڵانسی دۆلار",
+  "dashboardIqdBalance": "باڵانسی دینار",
+  "dashboardSendMoney": "ناردنی پارە",
+  "dashboardConvert": "گۆڕین",
+  "dashboardLoading": "داشبۆرد لۆد دەکرێت...",
 
   "navHome": "سەرەتا",
   "navCards": "کارتەکان",
@@ -142,5 +160,53 @@
   "statusCancelled": "هەڵوەشێنرایەوە",
   "statusFrozen": "ستونکراو",
   "statusApproved": "پەسەندکراو",
-  "statusRejected": "ڕەتکراوە"
+  "statusRejected": "ڕەتکراوە",
+
+  "registerBranchRequired": "تکایە لقێک هەڵبژێرە",
+  "registerPasswordMismatch": "وشە نهێنییەکان وەک یەک نین",
+
+  "forgotPasswordTitle": "وشەی نهێنیت لەبیرکردووە؟",
+  "forgotPasswordSubtitle": "ناونیشانی ئیمەیڵەکەت بنووسە و ئێمە کۆدێکی پارێزراوت بۆ دەنێرین بۆ گۆڕینی وشەی نهێنی.",
+  "forgotPasswordSendCode": "ناردنی کۆدی گۆڕین",
+  "forgotPasswordBackToLogin": "گەڕانەوە بۆ چوونە ژوورەوە",
+  "resetPasswordTitle": "وشەی نهێنی بگۆڕە",
+  "resetPasswordSubtitle": "کۆدە ٦ ژمارەییەکە و وشەی نهێنی نوێ بنووسە.",
+  "resetPasswordSuccess": "وشەی نهێنی بە سەرکەوتوویی گۆڕدرا! بە وشەی نهێنی نوێوە بچۆ ژوورەوە.",
+  "resetPasswordNew": "وشەی نهێنی نوێ",
+  "resetPasswordConfirm": "دووپاتکردنەوەی وشەی نهێنی نوێ",
+  "resetPasswordButton": "گۆڕینی وشەی نهێنی",
+  "resetPasswordResend": "ناردنەوەی کۆدی گۆڕین",
+  "resetPasswordHint": "لانی کەم ٨ پیت، پیتی گەورە و بچووک و ژمارە",
+  "resetPasswordConfirmHint": "وشەی نهێنیت دووپات بکەرەوە",
+  "resetCodeLabel": "کۆدی گۆڕین (OTP)",
+  "resetCodeRequired": "تکایە کۆدی گۆڕین بنووسە",
+  "resetCodeLengthError": "کۆدەکە دەبێت ٦ ژمارە بێت",
+  "resetPasswordRequired": "تکایە وشەی نهێنی نوێ بنووسە",
+  "resetPasswordMinLength": "پێویستە وشەی نهێنی لانی کەم ٨ پیت بێت",
+  "resetPasswordUppercase": "پێویستە پیتی گەورە تێدابێت",
+  "resetPasswordLowercase": "پێویستە پیتی بچووک تێدابێت",
+  "resetPasswordNumber": "پێویستە ژمارە تێدابێت",
+  "resetPasswordConfirmRequired": "تکایە وشەی نهێنیەکەت دووپات بکەرەوە",
+  "resetPasswordMismatch": "وشە نهێنییەکان وەک یەک نین",
+  "sandboxTitle": "ژینگەی تاقیکاری گەشەپێدەر",
+  "sandboxOtpLabel": "کۆدی OTP تۆ: ",
+  "otpTwoFactorTitle": "پشتڕاستکردنەوەی دوو قۆناغی",
+  "otpSentToEmail": "کۆدە ٦ ژمارەییەکە بنووسە کە نێردراوە بۆ\n{email}",
+  "@otpSentToEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "otpResentSuccess": "کۆدی پشتڕاستکردنەوە بە سەرکەوتوویی نێردرایەوە!",
+  "otpSecurityNote": "هەرگیز کۆدی پشتڕاستکردنەوەکەت بە کەس مەدە، بە کارمەندانی بانکیشەوە.",
+  "otpResendInSeconds": "ناردنەوەی کۆد لە {seconds} چرکە",
+  "@otpResendInSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  }
 }

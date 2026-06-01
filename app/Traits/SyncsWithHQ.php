@@ -26,14 +26,17 @@ trait SyncsWithHQ
      */
     public static function bootSyncsWithHQ(): void
     {
+        // After creating a record in the branch DB, replicate it to HQ
         static::created(function ($model) {
             $model->syncCreatedToHQ();
         });
 
+        // After updating a record in the branch DB, replicate the changes to HQ
         static::updated(function ($model) {
             $model->syncUpdatedToHQ();
         });
 
+        // After deleting (soft or hard), replicate to HQ
         static::deleted(function ($model) {
             $model->syncDeletedToHQ();
         });
@@ -41,6 +44,7 @@ trait SyncsWithHQ
 
     /**
      * Get the actual resolved connection name for this model.
+     * Handles the case where getConnectionName() returns null (uses default).
      */
     private function resolvedConnectionName(): string
     {
@@ -61,31 +65,17 @@ trait SyncsWithHQ
     private function prepareDataForHQ(array $data): array
     {
         foreach ($data as $key => $value) {
+            // Convert DateTimeInterface objects to string
             if ($value instanceof \DateTimeInterface) {
                 $data[$key] = $value->format('Y-m-d H:i:s');
-            } elseif (is_array($value) || is_object($value)) {
+            }
+            // Convert arrays/objects to JSON
+            elseif (is_array($value) || is_object($value)) {
                 $data[$key] = json_encode($value);
             }
         }
 
         return $data;
-    }
-
-    /**
-     * Build outbox insert data with status/retry tracking.
-     */
-    private function buildOutboxData(string $table, int $recordId, string $action, array $data): array
-    {
-        return [
-            'table' => $table,
-            'record_id' => $recordId,
-            'action' => $action,
-            'data' => json_encode($data),
-            'status' => 'pending',
-            'retry_count' => 0,
-            'max_retries' => 5,
-            'created_at' => now(),
-        ];
     }
 
     /**
@@ -99,6 +89,7 @@ trait SyncsWithHQ
 
         // Don't sync if we're already writing to HQ
         if ($this->isOnHQConnection()) {
+            // If in HQ fallback mode, we must queue this write on HQ to sync back to the branch later!
             $fallbackBranch = DistributedDatabaseService::getFallbackBranch();
             if ($fallbackBranch) {
                 try {
@@ -110,9 +101,6 @@ trait SyncsWithHQ
                             'record_id' => $this->getKey(),
                             'action' => 'insert',
                             'data' => json_encode($data),
-                            'status' => 'pending',
-                            'retry_count' => 0,
-                            'max_retries' => 5,
                             'created_at' => now(),
                         ]);
                     Log::info("SyncsWithHQ: Recorded HQ fallback insert for down branch '{$fallbackBranch}'");
@@ -124,18 +112,24 @@ trait SyncsWithHQ
         }
 
         try {
+            // Use insertOrIgnore to prevent duplicate key errors if HQ already has this record
             DB::connection(DistributedDatabaseService::getHqConnection())
                 ->table($this->getTable())
                 ->insertOrIgnore($data);
 
-            Log::debug("SyncsWithHQ: Created {$this->getTable()} #{$this->getKey()} in HQ");
+            Log::debug("SyncsWithHQ: Created {$this->getTable()} #{$this->getKey()} in HQ (from {$this->resolvedConnectionName()})");
         } catch (\Exception $e) {
-            Log::error("SyncsWithHQ: Failed to sync create to HQ for {$this->getTable()} #{$this->getKey()}: " . $e->getMessage());
-
+            Log::error("SyncsWithHQ: Failed to sync create to HQ for {$this->getTable()} #{$this->getKey()}: " . $e->getMessage() . ". Logging to pending_hq_syncs.");
+            
+            // Queue failure in the local branch database
             try {
-                DB::connection($this->resolvedConnectionName())->table('pending_hq_syncs')->insert(
-                    $this->buildOutboxData($this->getTable(), $this->getKey(), 'insert', $data)
-                );
+                DB::connection($this->resolvedConnectionName())->table('pending_hq_syncs')->insert([
+                    'table' => $this->getTable(),
+                    'record_id' => $this->getKey(),
+                    'action' => 'insert',
+                    'data' => json_encode($data),
+                    'created_at' => now(),
+                ]);
             } catch (\Exception $innerEx) {
                 Log::critical("SyncsWithHQ: Outbox critical failure on insert queue: " . $innerEx->getMessage());
             }
@@ -154,11 +148,13 @@ trait SyncsWithHQ
 
         $changes = $this->prepareDataForHQ($changes);
 
+        // Also sync updated_at
         if ($this->usesTimestamps() && !isset($changes['updated_at'])) {
             $changes['updated_at'] = $this->freshTimestampString();
         }
 
         if ($this->isOnHQConnection()) {
+            // If in HQ fallback mode, we must queue this update on HQ to sync back to the branch later!
             $fallbackBranch = DistributedDatabaseService::getFallbackBranch();
             if ($fallbackBranch) {
                 try {
@@ -170,9 +166,6 @@ trait SyncsWithHQ
                             'record_id' => $this->getKey(),
                             'action' => 'update',
                             'data' => json_encode($changes),
-                            'status' => 'pending',
-                            'retry_count' => 0,
-                            'max_retries' => 5,
                             'created_at' => now(),
                         ]);
                     Log::info("SyncsWithHQ: Recorded HQ fallback update for down branch '{$fallbackBranch}'");
@@ -188,6 +181,7 @@ trait SyncsWithHQ
                 ->table($this->getTable())
                 ->where('id', $this->getKey());
 
+            // If the record doesn't exist in HQ (edge case), insert it entirely
             if (!$hq->exists()) {
                 $data = $this->prepareDataForHQ($this->getAttributes());
                 $data['id'] = $this->getKey();
@@ -200,12 +194,17 @@ trait SyncsWithHQ
 
             Log::debug("SyncsWithHQ: Updated {$this->getTable()} #{$this->getKey()} in HQ");
         } catch (\Exception $e) {
-            Log::error("SyncsWithHQ: Failed to sync update to HQ for {$this->getTable()} #{$this->getKey()}: " . $e->getMessage());
+            Log::error("SyncsWithHQ: Failed to sync update to HQ for {$this->getTable()} #{$this->getKey()}: " . $e->getMessage() . ". Logging to pending_hq_syncs.");
 
+            // Queue failure in the local branch database
             try {
-                DB::connection($this->resolvedConnectionName())->table('pending_hq_syncs')->insert(
-                    $this->buildOutboxData($this->getTable(), $this->getKey(), 'update', $changes)
-                );
+                DB::connection($this->resolvedConnectionName())->table('pending_hq_syncs')->insert([
+                    'table' => $this->getTable(),
+                    'record_id' => $this->getKey(),
+                    'action' => 'update',
+                    'data' => json_encode($changes),
+                    'created_at' => now(),
+                ]);
             } catch (\Exception $innerEx) {
                 Log::critical("SyncsWithHQ: Outbox critical failure on update queue: " . $innerEx->getMessage());
             }
@@ -220,6 +219,7 @@ trait SyncsWithHQ
         $isSoft = method_exists($this, 'trashed') && $this->trashed();
 
         if ($this->isOnHQConnection()) {
+            // If in HQ fallback mode, we must queue this delete on HQ to sync back to the branch later!
             $fallbackBranch = DistributedDatabaseService::getFallbackBranch();
             if ($fallbackBranch) {
                 try {
@@ -231,9 +231,6 @@ trait SyncsWithHQ
                             'record_id' => $this->getKey(),
                             'action' => 'delete',
                             'data' => json_encode(['is_soft' => $isSoft]),
-                            'status' => 'pending',
-                            'retry_count' => 0,
-                            'max_retries' => 5,
                             'created_at' => now(),
                         ]);
                     Log::info("SyncsWithHQ: Recorded HQ fallback delete for down branch '{$fallbackBranch}'");
@@ -245,6 +242,7 @@ trait SyncsWithHQ
         }
 
         try {
+            // Check if this model uses soft deletes
             if ($isSoft) {
                 DB::connection(DistributedDatabaseService::getHqConnection())
                     ->table($this->getTable())
@@ -259,12 +257,17 @@ trait SyncsWithHQ
 
             Log::debug("SyncsWithHQ: Deleted {$this->getTable()} #{$this->getKey()} from HQ");
         } catch (\Exception $e) {
-            Log::error("SyncsWithHQ: Failed to sync delete to HQ for {$this->getTable()} #{$this->getKey()}: " . $e->getMessage());
+            Log::error("SyncsWithHQ: Failed to sync delete to HQ for {$this->getTable()} #{$this->getKey()}: " . $e->getMessage() . ". Logging to pending_hq_syncs.");
 
+            // Queue failure in local branch database
             try {
-                DB::connection($this->resolvedConnectionName())->table('pending_hq_syncs')->insert(
-                    $this->buildOutboxData($this->getTable(), $this->getKey(), 'delete', ['is_soft' => $isSoft])
-                );
+                DB::connection($this->resolvedConnectionName())->table('pending_hq_syncs')->insert([
+                    'table' => $this->getTable(),
+                    'record_id' => $this->getKey(),
+                    'action' => 'delete',
+                    'data' => json_encode(['is_soft' => $isSoft]),
+                    'created_at' => now(),
+                ]);
             } catch (\Exception $innerEx) {
                 Log::critical("SyncsWithHQ: Outbox critical failure on delete queue: " . $innerEx->getMessage());
             }

@@ -42,4 +42,34 @@ class OtpService
         
         return false;
     }
+
+    /**
+     * Generate and store a password reset OTP.
+     */
+    public function generateResetOtp(User $user): string
+    {
+        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $cacheKey = 'password_reset_otp_' . $user->id;
+        
+        Cache::put($cacheKey, $otp, now()->addMinutes(10));
+        Log::info("Generated Password Reset OTP for User {$user->id} ({$user->email}): {$otp}");
+        
+        return $otp;
+    }
+
+    /**
+     * Verify the provided password reset OTP.
+     */
+    public function verifyResetOtp(User $user, string $otp): bool
+    {
+        $cacheKey = 'password_reset_otp_' . $user->id;
+        $cachedOtp = Cache::get($cacheKey);
+        
+        if ($cachedOtp && $cachedOtp === $otp) {
+            Cache::forget($cacheKey);
+            return true;
+        }
+        
+        return false;
+    }
 }

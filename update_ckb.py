@@ -3,7 +3,7 @@ import json
 translations = {
     "256-bit AES encryption for all transactions": "کۆدکردنی جۆری 256-bit AES بۆ هەموو مامەڵەکان",
     "A beautifully designed, premium digital banking platform. Escrow transfers, secure smart cards, and intelligent loan insights at your fingertips.": "پلاتفۆرمێکی بانکی دیجیتاڵی نایاب کە بە جوانی دیزاین کراوە. گواستنەوەی پارێزراو، کارتی زیرەکی پارێزراو، و زانیاری زیرەکی قەرز لەبەردەستتدایە.",
-    "About Distributed Bank": "دەربارەی Distributed Bank",
+    "About NexusBank": "دەربارەی NexusBank",
     "Access highly competitive loans backed directly by real-time bank reserve limits. Instant approvals driven by an intelligent capacity system.": "دەستت بگات بە قەرزی زۆر ڕکابەرانە کە ڕاستەوخۆ پشتگیری دەکرێت لەلایەن سنوورەکانی یەدەگی بانکی ڕاستەقینەوە. ڕەزامەندی خێرا کە لەلایەن سیستەمێکی توانای زیرەکەوە بەڕێوەدەچێت.",
     "Access your account from any city, seamlessly": "دەستت بە هەژمارەکەت بگات لە هەر شارێکەوە، بەبێ کێشە",
     "Actionable Notifications": "ئاگادارکردنەوەی کردارەکی",
@@ -38,7 +38,7 @@ translations = {
     "Legal": "یاسایی",
     "Multi-currency support across 50+ currencies": "پاڵپشتی فرە دراو بۆ زیاتر لە ٥٠ دراو",
     "Never miss a beat. Real-time, actionable notifications keep you updated on transfer requests, card activations, and vital security alerts.": "هەرگیز هیچت لەدەست نەچێت. ئاگادارکردنەوەی ڕاستەقینە و کردارەکی ئاگادارت دەکاتەوە لە داواکارییەکانی گواستنەوە، چالاککردنی کارت، و ئاگادارییە گرنگەکانی ئاسایش.",
-    "Distributed Bank Platform. All rights reserved. Banking services are simulated for demonstration purposes.": "پلاتفۆرمی Distributed Bank. هەموو مافێک پارێزراوە. خزمەتگوزارییە بانکییەکان بۆ مەبەستی تاقیکردنەوە هاوشێوە کراون.",
+    "NexusBank Platform. All rights reserved. Banking services are simulated for demonstration purposes.": "پلاتفۆرمی NexusBank. هەموو مافێک پارێزراوە. خزمەتگوزارییە بانکییەکان بۆ مەبەستی تاقیکردنەوە هاوشێوە کراون.",
     "Open a free account in under 2 minutes. Choose your nearest branch location.": "لە کەمتر لە ٢ خولەکدا هەژمارێکی بێبەرامبەر بکەرەوە. نزیکترین لقی خۆت هەڵبژێرە.",
     "Personal Loans": "قەرزی کەسی",
     "Platform": "پلاتفۆرم",

@@ -15,18 +15,6 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, SyncsWithHQ;
 
-    // ── Role Constants ──────────────────────────────────────────
-    const ROLE_CUSTOMER = 'customer';
-    const ROLE_ADMIN = 'admin';
-    const ROLE_SUPER_ADMIN = 'super_admin';
-
-    // ── Status Constants ────────────────────────────────────────
-    const STATUS_ACTIVE = 'active';
-    const STATUS_INACTIVE = 'inactive';
-    const STATUS_SUSPENDED = 'suspended';
-    const STATUS_FROZEN = 'frozen';
-    const STATUS_PENDING_VERIFICATION = 'pending_verification';
-
     /**
      * The attributes that are mass assignable.
      *
@@ -152,12 +140,12 @@ class User extends Authenticatable
 
     public function scopeAdmins($query)
     {
-        return $query->whereIn('role', [self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN]);
+        return $query->whereIn('role', ['admin', 'super_admin']);
     }
 
     public function scopeCustomers($query)
     {
-        return $query->where('role', self::ROLE_CUSTOMER);
+        return $query->where('role', 'customer');
     }
 
     public function scopeOfBranch($query, string $branch)
@@ -169,17 +157,17 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN]);
+        return in_array($this->role, ['admin', 'super_admin']);
     }
 
     public function isSuperAdmin(): bool
     {
-        return $this->role === self::ROLE_SUPER_ADMIN;
+        return $this->role === 'super_admin';
     }
 
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return $this->status === 'active';
     }
 
     public function isLocked(): bool
@@ -199,7 +187,8 @@ class User extends Authenticatable
 
     public function isKycVerified(): bool
     {
-        return $this->kycDocuments()->where('status', 'verified')->exists();
+        $verifiedDocs = $this->kycDocuments()->where('status', 'verified')->pluck('document_type')->toArray();
+        return in_array('passport', $verifiedDocs) && in_array('national_id', $verifiedDocs);
     }
 
     public function unreadNotificationsCount(): int

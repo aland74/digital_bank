@@ -20,7 +20,7 @@ class AdminSeeder extends Seeder
         // Super Admin
         $admin = User::create([
             'name' => 'System Administrator',
-            'email' => 'admin@distributedbank.com',
+            'email' => 'admin@nexusbank.com',
             'password' => bcrypt('Admin@123456'),
             'phone' => '+964-750-000-0001',
             'role' => 'super_admin',
@@ -34,7 +34,7 @@ class AdminSeeder extends Seeder
         // Regular Admin
         $staff = User::create([
             'name' => 'Sara Ahmed',
-            'email' => 'sara@distributedbank.com',
+            'email' => 'sara@nexusbank.com',
             'password' => bcrypt('Staff@123456'),
             'phone' => '+964-770-000-0002',
             'role' => 'admin',

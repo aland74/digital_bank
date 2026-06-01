@@ -6,6 +6,7 @@ import '../../blocs/auth/auth_state.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/validators.dart';
+import '../../l10n/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -43,8 +44,10 @@ class _RegisterScreenState extends State<RegisterScreen>
             begin: const Offset(0, 0.15), end: Offset.zero)
         .animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOut));
     Future.delayed(const Duration(milliseconds: 100), () {
-      _fadeCtrl.forward();
-      _slideCtrl.forward();
+      if (mounted) {
+        _fadeCtrl.forward();
+        _slideCtrl.forward();
+      }
     });
   }
 
@@ -77,6 +80,8 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
@@ -164,9 +169,9 @@ class _RegisterScreenState extends State<RegisterScreen>
                         const SizedBox(height: 24),
 
                         // ── Title ─────────────────────────────
-                        const Text(
-                          'Create Account',
-                          style: TextStyle(
+                        Text(
+                          l10n.registerTitle,
+                          style: const TextStyle(
                             fontFamily: 'Outfit',
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
@@ -176,7 +181,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Join our secure banking platform',
+                          l10n.registerSubtitle,
                           style: TextStyle(
                             fontFamily: 'Outfit',
                             fontSize: 14,
@@ -200,24 +205,24 @@ class _RegisterScreenState extends State<RegisterScreen>
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               // Full Name
-                              _buildLabel('Full Name'),
+                              _buildLabel(l10n.registerName),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _nameController,
                                 textInputAction: TextInputAction.next,
                                 textCapitalization: TextCapitalization.words,
                                 validator: (v) =>
-                                    Validators.required(v, 'Name'),
+                                    Validators.required(v, l10n.registerName),
                                 style: const TextStyle(color: Colors.white),
                                 decoration: _inputDecoration(
-                                  'Enter your full name',
+                                  l10n.registerName,
                                   Icons.person_outlined,
                                 ),
                               ),
                               const SizedBox(height: 18),
 
                               // Email
-                              _buildLabel('Email Address'),
+                              _buildLabel(l10n.registerEmail),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _emailController,
@@ -233,7 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               const SizedBox(height: 18),
 
                               // Phone
-                              _buildLabel('Phone Number'),
+                              _buildLabel(l10n.registerPhone),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _phoneController,
@@ -249,17 +254,17 @@ class _RegisterScreenState extends State<RegisterScreen>
                               const SizedBox(height: 18),
 
                               // Branch dropdown
-                              _buildLabel('Branch'),
+                              _buildLabel(l10n.registerBranch),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
                                 value: _selectedBranch,
                                 validator: (v) =>
-                                    v == null ? 'Please select a branch' : null,
+                                    v == null ? l10n.registerBranchRequired : null,
                                 dropdownColor: const Color(0xFF1A2332),
                                 style: const TextStyle(
                                     color: Colors.white, fontFamily: 'Outfit'),
                                 decoration: _inputDecoration(
-                                  'Select your branch',
+                                  l10n.registerBranch,
                                   Icons.location_city_outlined,
                                 ),
                                 items: AppConstants.branches
@@ -276,7 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               const SizedBox(height: 18),
 
                               // Password
-                              _buildLabel('Password'),
+                              _buildLabel(l10n.registerPassword),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _passwordController,
@@ -303,7 +308,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               const SizedBox(height: 18),
 
                               // Confirm Password
-                              _buildLabel('Confirm Password'),
+                              _buildLabel(l10n.registerConfirmPassword),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _confirmPasswordController,
@@ -312,12 +317,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 onFieldSubmitted: (_) => _onRegister(),
                                 validator: (v) {
                                   final req = Validators.required(
-                                      v, 'Confirm Password');
+                                      v, l10n.registerConfirmPassword);
                                   if (req != null) return req;
                                   return Validators.match(
                                     v,
                                     _passwordController.text,
-                                    'Passwords do not match',
+                                    l10n.registerPasswordMismatch,
                                   );
                                 },
                                 style: const TextStyle(color: Colors.white),
@@ -377,9 +382,9 @@ class _RegisterScreenState extends State<RegisterScreen>
                                                 color: Colors.white,
                                               ),
                                             )
-                                          : const Text(
-                                              'Create Account',
-                                              style: TextStyle(
+                                          : Text(
+                                              l10n.registerButton,
+                                              style: const TextStyle(
                                                 fontFamily: 'Outfit',
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w600,
@@ -400,7 +405,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Already have an account?  ',
+                              l10n.registerHasAccount + "  ",
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 14,
@@ -409,8 +414,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                             GestureDetector(
                               onTap: () => Navigator.of(context).pop(),
                               child: Text(
-                                'Sign In',
-                                style: TextStyle(
+                                l10n.registerLogin,
+                                style: const TextStyle(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,

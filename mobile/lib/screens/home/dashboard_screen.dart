@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../l10n/app_localizations.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -35,6 +36,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: SafeArea(
         child: IndexedStack(
@@ -58,31 +61,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
+            label: l10n.navHome,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.credit_card_outlined),
-            activeIcon: Icon(Icons.credit_card),
-            label: 'Cards',
+            icon: const Icon(Icons.credit_card_outlined),
+            activeIcon: const Icon(Icons.credit_card),
+            label: l10n.navCards,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.swap_horiz_outlined),
-            activeIcon: Icon(Icons.swap_horiz),
-            label: 'Transfer',
+            icon: const Icon(Icons.swap_horiz_outlined),
+            activeIcon: const Icon(Icons.swap_horiz),
+            label: l10n.navTransfer,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_outlined),
-            activeIcon: Icon(Icons.account_balance),
-            label: 'Loans',
+            icon: const Icon(Icons.account_balance_outlined),
+            activeIcon: const Icon(Icons.account_balance),
+            label: l10n.navLoans,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outlined),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outlined),
+            activeIcon: const Icon(Icons.person),
+            label: l10n.navProfile,
           ),
         ],
       ),
@@ -98,10 +101,12 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocBuilder<DashboardBloc, DashboardState>(
       builder: (context, state) {
         if (state is DashboardLoading) {
-          return const LoadingIndicator(message: 'Loading dashboard...');
+          return LoadingIndicator(message: l10n.dashboardLoading);
         }
         if (state is DashboardError) {
           return Center(
@@ -114,7 +119,7 @@ class _HomeTab extends StatelessWidget {
                   onPressed: () => context
                       .read<DashboardBloc>()
                       .add(const RefreshDashboard()),
-                  child: const Text('Retry'),
+                  child: Text(l10n.generalRetry),
                 ),
               ],
             ),
@@ -139,19 +144,19 @@ class _HomeTab extends StatelessWidget {
                           ? authState.user.name.split(' ').first
                           : 'User';
                         final hour = DateTime.now().hour;
-                        String greeting = 'Welcome back';
+                        String greeting = l10n.dashboardWelcomeBack;
                         if (hour < 12) {
-                          greeting = 'Good morning';
+                          greeting = l10n.dashboardGoodMorning;
                         } else if (hour < 17) {
-                          greeting = 'Good afternoon';
+                          greeting = l10n.dashboardGoodAfternoon;
                         } else {
-                          greeting = 'Good evening';
+                          greeting = l10n.dashboardGoodEvening;
                         }
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Hello, $name',
+                              l10n.dashboardHello(name),
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontFamily: 'Outfit',
                                     fontWeight: FontWeight.bold,
@@ -177,14 +182,14 @@ class _HomeTab extends StatelessWidget {
 
                 // Balance cards
                 _BalanceCard(
-                  label: 'USD Balance',
+                  label: l10n.dashboardUsdBalance,
                   amount: data.totalBalanceUSD,
                   currency: 'USD',
                   gradient: AppColors.primaryGradient,
                 ),
                 const SizedBox(height: 12),
                 _BalanceCard(
-                  label: 'IQD Balance',
+                  label: l10n.dashboardIqdBalance,
                   amount: data.totalBalanceIQD,
                   currency: 'IQD',
                   gradient: AppColors.secondaryGradient,
@@ -193,7 +198,7 @@ class _HomeTab extends StatelessWidget {
 
                 // Quick actions
                 Text(
-                  'Quick Actions',
+                  l10n.dashboardQuickActions,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontFamily: 'Outfit',
                         fontWeight: FontWeight.bold,
@@ -204,22 +209,22 @@ class _HomeTab extends StatelessWidget {
                   children: [
                     _QuickAction(
                       icon: Icons.send_rounded,
-                      label: 'Send Money',
+                      label: l10n.dashboardSendMoney,
                       onTap: () => onTabChange(2, 0),
                     ),
                     _QuickAction(
                       icon: Icons.credit_card_rounded,
-                      label: 'Cards',
+                      label: l10n.navCards,
                       onTap: () => onTabChange(1, null),
                     ),
                     _QuickAction(
                       icon: Icons.account_balance_rounded,
-                      label: 'Loans',
+                      label: l10n.navLoans,
                       onTap: () => onTabChange(3, null),
                     ),
                     _QuickAction(
                       icon: Icons.currency_exchange_rounded,
-                      label: 'Convert',
+                      label: l10n.dashboardConvert,
                       onTap: () => onTabChange(2, 2),
                     ),
                   ],
@@ -231,7 +236,7 @@ class _HomeTab extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Recent Transactions',
+                      l10n.dashboardRecentTransactions,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontFamily: 'Outfit',
                             fontWeight: FontWeight.bold,
@@ -239,14 +244,14 @@ class _HomeTab extends StatelessWidget {
                     ),
                     TextButton(
                       onPressed: () => Navigator.pushNamed(context, '/transactions'),
-                      child: const Text('View All'),
+                      child: Text(l10n.dashboardViewAll),
                     ),
                   ],
                 ),
                 if (data.recentTransactions.isEmpty)
-                  const EmptyState(
+                  EmptyState(
                     icon: Icons.receipt_long_outlined,
-                    title: 'No recent transactions',
+                    title: l10n.dashboardNoTransactions,
                   )
                 else
                   ...data.recentTransactions.take(5).map(

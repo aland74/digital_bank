@@ -116,6 +116,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardNoTransactions => 'No recent transactions';
 
   @override
+  String dashboardHello(String name) {
+    return 'Hello, $name';
+  }
+
+  @override
+  String get dashboardGoodMorning => 'Good morning';
+
+  @override
+  String get dashboardGoodAfternoon => 'Good afternoon';
+
+  @override
+  String get dashboardGoodEvening => 'Good evening';
+
+  @override
+  String get dashboardWelcomeBack => 'Welcome back';
+
+  @override
+  String get dashboardUsdBalance => 'USD Balance';
+
+  @override
+  String get dashboardIqdBalance => 'IQD Balance';
+
+  @override
+  String get dashboardSendMoney => 'Send Money';
+
+  @override
+  String get dashboardConvert => 'Convert';
+
+  @override
+  String get dashboardLoading => 'Loading dashboard...';
+
+  @override
   String get navHome => 'Home';
 
   @override
@@ -392,4 +424,108 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusRejected => 'Rejected';
+
+  @override
+  String get registerBranchRequired => 'Please select a branch';
+
+  @override
+  String get registerPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get forgotPasswordTitle => 'Forgot Password?';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'Enter your email address and we\'ll send you a secure code to reset your password.';
+
+  @override
+  String get forgotPasswordSendCode => 'Send Reset Code';
+
+  @override
+  String get forgotPasswordBackToLogin => 'Back to Sign In';
+
+  @override
+  String get resetPasswordTitle => 'Reset Password';
+
+  @override
+  String get resetPasswordSubtitle =>
+      'Enter the 6-digit code and your new password.';
+
+  @override
+  String get resetPasswordSuccess =>
+      'Password reset successfully! Sign in with your new password.';
+
+  @override
+  String get resetPasswordNew => 'New Password';
+
+  @override
+  String get resetPasswordConfirm => 'Confirm New Password';
+
+  @override
+  String get resetPasswordButton => 'Reset Password';
+
+  @override
+  String get resetPasswordResend => 'Resend Reset Code';
+
+  @override
+  String get resetPasswordHint => 'Min 8 chars, mixed case, numbers';
+
+  @override
+  String get resetPasswordConfirmHint => 'Confirm your password';
+
+  @override
+  String get resetCodeLabel => 'Reset Code (OTP)';
+
+  @override
+  String get resetCodeRequired => 'Please enter the reset code';
+
+  @override
+  String get resetCodeLengthError => 'Code must be 6 digits';
+
+  @override
+  String get resetPasswordRequired => 'Please enter a new password';
+
+  @override
+  String get resetPasswordMinLength => 'Password must be at least 8 characters';
+
+  @override
+  String get resetPasswordUppercase => 'Must include an uppercase letter';
+
+  @override
+  String get resetPasswordLowercase => 'Must include a lowercase letter';
+
+  @override
+  String get resetPasswordNumber => 'Must include a number';
+
+  @override
+  String get resetPasswordConfirmRequired => 'Please confirm your password';
+
+  @override
+  String get resetPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get sandboxTitle => 'Developer Sandbox';
+
+  @override
+  String get sandboxOtpLabel => 'Your OTP: ';
+
+  @override
+  String get otpTwoFactorTitle => 'Two-Factor Verification';
+
+  @override
+  String otpSentToEmail(String email) {
+    return 'Enter the 6-digit code sent to\n$email';
+  }
+
+  @override
+  String get otpResentSuccess => 'Verification code resent successfully!';
+
+  @override
+  String get otpSecurityNote =>
+      'Never share your verification code with anyone, including bank staff.';
+
+  @override
+  String otpResendInSeconds(String seconds) {
+    return 'Resend code in ${seconds}s';
+  }
 }

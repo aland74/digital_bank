@@ -6,6 +6,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../core/theme/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 
 class OtpScreen extends StatefulWidget {
   final String email;
@@ -159,6 +160,8 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
@@ -168,7 +171,7 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
           );
         } else if (state is AuthOtpResent) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('Verification code resent successfully!'),
+            content: Text(l10n.otpResentSuccess),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
             shape:
@@ -244,9 +247,9 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
                   const SizedBox(height: 28),
 
                   // ── Title ─────────────────────────────────
-                  const Text(
-                    'Two-Factor\nVerification',
-                    style: TextStyle(
+                  Text(
+                    l10n.otpTwoFactorTitle,
+                    style: const TextStyle(
                       fontFamily: 'Outfit',
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
@@ -256,24 +259,14 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 10),
-                  RichText(
+                  Text(
+                    l10n.otpSentToEmail(widget.email),
                     textAlign: TextAlign.center,
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontFamily: 'Outfit',
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.5),
-                      ),
-                      children: [
-                        const TextSpan(text: 'Enter the 6-digit code sent to\n'),
-                        TextSpan(
-                          text: widget.email,
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.55),
+                      height: 1.5,
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -331,9 +324,9 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
                                       strokeWidth: 2.5,
                                       color: Colors.white),
                                 )
-                              : const Text(
-                                  'Verify Code',
-                                  style: TextStyle(
+                              : Text(
+                                  l10n.otpButton,
+                                  style: const TextStyle(
                                     fontFamily: 'Outfit',
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -349,23 +342,12 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
                   // ── Resend ────────────────────────────────
                   Center(
                     child: _resendSeconds > 0
-                        ? RichText(
-                            text: TextSpan(
-                              style: TextStyle(
-                                fontFamily: 'Outfit',
-                                fontSize: 14,
-                                color: Colors.white.withValues(alpha: 0.45),
-                              ),
-                              children: [
-                                const TextSpan(text: 'Resend code in  '),
-                                TextSpan(
-                                  text: '${_resendSeconds}s',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                        ? Text(
+                            l10n.otpResendInSeconds(_resendSeconds.toString()),
+                            style: TextStyle(
+                              fontFamily: 'Outfit',
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.45),
                             ),
                           )
                         : GestureDetector(
@@ -374,7 +356,7 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
                               context.read<AuthBloc>().add(ResendOtpRequested(email: widget.email));
                             },
                             child: Text(
-                              'Resend Code',
+                              l10n.otpResend,
                               style: TextStyle(
                                 fontFamily: 'Outfit',
                                 fontSize: 14,
@@ -405,7 +387,7 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Never share your verification code with anyone, including bank staff.',
+                            l10n.otpSecurityNote,
                             style: TextStyle(
                               fontFamily: 'Outfit',
                               fontSize: 12,

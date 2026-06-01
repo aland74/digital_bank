@@ -27,7 +27,7 @@
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation">
         <div class="sidebar-brand">
-            <div class="sidebar-brand-icon">N</div>
+            <div class="sidebar-brand-icon">DB</div>
             <span class="sidebar-brand-text">Distributed Bank</span>
         </div>
 

@@ -327,6 +327,11 @@ class TransferApiController extends Controller
      */
     public function convert(Request $request, TransactionService $transactionService)
     {
+        // Map 'from' parameter from mobile app to 'from_currency'
+        if ($request->has('from') && !$request->has('from_currency')) {
+            $request->merge(['from_currency' => $request->input('from')]);
+        }
+
         $validated = $request->validate([
             'from_currency' => 'required|in:USD,IQD',
             'amount' => 'required|numeric|min:0.01',
@@ -351,6 +356,40 @@ class TransferApiController extends Controller
             $currency = \App\Models\Currency::where('code', $fromCurrency)->first();
             return response()->json([
                 'message' => 'Insufficient balance. Available: ' . ($currency?->symbol ?? $fromCurrency) . number_format($fromAccount->available_balance, $currency?->decimal_places ?? 2),
+            ], 422);
+        }
+
+        // Enforce $200 monthly conversion limit
+        // Only count the SOURCE (debit) side to avoid double-counting both legs of each conversion
+        $accountIds = $user->accounts()->pluck('id');
+        $totalMonthlyConversionInUsd = 0;
+
+        $usdDebitSum = \App\Models\Transaction::whereIn('account_id', $accountIds)
+            ->where('description', 'like', 'Currency conversion%')
+            ->where('type', 'transfer_out')
+            ->where('currency', 'USD')
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->sum('amount');
+        $totalMonthlyConversionInUsd += $usdDebitSum;
+
+        $iqdDebitSum = \App\Models\Transaction::whereIn('account_id', $accountIds)
+            ->where('description', 'like', 'Currency conversion%')
+            ->where('type', 'transfer_out')
+            ->where('currency', 'IQD')
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->sum('amount');
+        $totalMonthlyConversionInUsd += \App\Services\ExchangeRateService::iqdToUsd($iqdDebitSum);
+
+        $amountInUsd = $fromCurrency === 'USD' ? $amount : \App\Services\ExchangeRateService::iqdToUsd($amount);
+
+        if ($totalMonthlyConversionInUsd + $amountInUsd > 200) {
+            $availableLimit = max(0, 200 - $totalMonthlyConversionInUsd);
+            return response()->json([
+                'message' => sprintf(
+                    "Monthly conversion limit exceeded. You have used $%s of your $200 monthly limit. Remaining: $%s.",
+                    number_format($totalMonthlyConversionInUsd, 2),
+                    number_format($availableLimit, 2)
+                ),
             ], 422);
         }
 

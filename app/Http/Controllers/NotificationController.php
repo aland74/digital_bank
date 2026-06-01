@@ -9,39 +9,11 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = $request->user()->notifications()->orderBy('created_at', 'desc');
+        $notifications = $request->user()->notifications()
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
 
-        // Filter by read status
-        if ($request->has('unread')) {
-            $query->where('is_read', false);
-        }
-
-        // Filter by type
-        if ($request->has('type')) {
-            $query->where('type', $request->type);
-        }
-
-        $notifications = $query->paginate(20)->withQueryString();
-
-        // Stats
-        $totalNotifications = $request->user()->notifications()->count();
-        $unreadCount = $request->user()->notifications()->where('is_read', false)->count();
-        $actionableCount = $request->user()->notifications()
-            ->where('is_read', false)
-            ->where(function ($q) {
-                $q->where('type', 'transfer_request')
-                  ->orWhere('type', 'card_frozen')
-                  ->orWhere('type', 'kyc_required');
-            })
-            ->count();
-
-        $stats = [
-            'total' => $totalNotifications,
-            'unread' => $unreadCount,
-            'actionable' => $actionableCount,
-        ];
-
-        return view('notifications.index', compact('notifications', 'stats'));
+        return view('notifications.index', compact('notifications'));
     }
 
     public function markAsRead(Notification $notification)

@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use App\Services\DistributedDatabaseService;
 
 class AccountService
 {
@@ -104,40 +103,5 @@ class AccountService
             'fixed_deposit' => 0.045,
             default => 0,
         };
-    }
-
-    /**
-     * Find an account by ID, checking the user's branch first, then falling back to HQ.
-     * Useful for cross-branch lookups where the account may not be on the current connection.
-     */
-    public static function findAccountAcrossBranches(int $accountId, int $userId): ?Account
-    {
-        // Try user's branch first
-        $branch = DistributedDatabaseService::findUserBranchById($userId);
-        if ($branch) {
-            $connection = DistributedDatabaseService::connectionForBranch($branch);
-            $account = Account::on($connection)->find($accountId);
-            if ($account) {
-                return $account;
-            }
-        }
-
-        // Fall back to HQ
-        return Account::on(DistributedDatabaseService::getHqConnection())->find($accountId);
-    }
-
-    /**
-     * Find a sender account for transfer operations.
-     * Checks sender's branch first, then falls back to HQ.
-     */
-    public static function findSenderAccount(int $accountId, int $senderUserId): Account
-    {
-        $account = self::findAccountAcrossBranches($accountId, $senderUserId);
-
-        if (!$account) {
-            abort(404, 'Account not found.');
-        }
-
-        return $account;
     }
 }

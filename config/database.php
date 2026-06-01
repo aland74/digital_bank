@@ -23,7 +23,7 @@ return [
     | Database Connections
     |--------------------------------------------------------------------------
     |
-    | NexusBank Distributed Database Architecture:
+    | Distributed Bank Distributed Database Architecture:
     |
     |   mysql_hq             → Headquarters (master copy of ALL data)
     |   mysql_erbil           → Erbil branch

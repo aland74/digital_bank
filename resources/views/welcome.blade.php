@@ -226,7 +226,7 @@
     <!-- Navigation -->
     <nav class="nav" id="navbar">
         <a href="/" class="logo">
-            <div class="logo-icon">N</div>
+            <div class="logo-icon">DB</div>
             Distributed Bank
         </a>
         <div class="nav-links">
@@ -415,7 +415,7 @@
         <div class="f-grid">
             <div class="f-col">
                 <a href="/" class="logo" style="margin-bottom:12px; display:inline-flex">
-                    <div class="logo-icon">N</div>
+                    <div class="logo-icon">DB</div>
                     Distributed Bank
                 </a>
                 <p class="f-desc">{{ __('Elevating digital banking with state-of-the-art security, stunning design, and powerful features for Kurdistan Region.') }}</p>

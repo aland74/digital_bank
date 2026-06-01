@@ -21,24 +21,48 @@ class AuthApiController extends Controller
             'email' => 'required|email|unique:users',
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'phone' => 'nullable|string|max:20',
+            'branch' => 'required|in:' . implode(',', \App\Services\DistributedDatabaseService::branchKeys()),
         ]);
+
+        $branch = $validated['branch'];
+
+        // Switch to the branch DB
+        try {
+            $branchConn = \App\Services\DistributedDatabaseService::connectionForBranch($branch);
+            if (\App\Services\DistributedDatabaseService::isConnectionOnline($branchConn)) {
+                \App\Services\DistributedDatabaseService::setActiveBranch($branch);
+            } else {
+                \App\Services\DistributedDatabaseService::setHQFallback($branch);
+            }
+        } catch (\Exception $e) {
+            \App\Services\DistributedDatabaseService::setHQFallback($branch);
+        }
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
             'phone' => $validated['phone'] ?? null,
+            'branch' => $branch,
+            'city' => ucfirst($branch),
+            'state' => ucfirst($branch),
+            'country' => 'IQ',
             'status' => 'active',
             'role' => 'customer',
         ]);
 
+        // Create both USD and IQD savings accounts on the active branch DB
         $accountService->createAccount($user, 'savings', 'USD', true);
+        $accountService->createAccount($user, 'savings', 'IQD', false);
 
         $token = $user->createToken('mobile-app')->plainTextToken;
 
+        // Reset default connection back to HQ for general safety
+        \App\Services\DistributedDatabaseService::setHQ();
+
         return response()->json([
             'message' => 'Account created successfully.',
-            'user' => array_merge($user->only(['id', 'name', 'email', 'phone', 'status']), ['is_kyc_verified' => false]),
+            'user' => array_merge($user->only(['id', 'name', 'email', 'phone', 'status', 'branch']), ['is_kyc_verified' => false]),
             'token' => $token,
         ], 201);
     }
@@ -144,6 +168,96 @@ class AuthApiController extends Controller
         $userData['is_kyc_verified'] = $request->user()->isKycVerified();
         return response()->json([
             'user' => $userData,
+        ]);
+    }
+
+    public function forgotPassword(Request $request, OtpService $otpService)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $normalizedEmail = strtolower(trim($request->email));
+        $user = null;
+
+        $branch = \App\Services\DistributedDatabaseService::findUserBranch($normalizedEmail);
+        if ($branch) {
+            try {
+                \App\Services\DistributedDatabaseService::setActiveBranch($branch);
+                $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
+            } catch (\Exception $e) {}
+        } else {
+            try {
+                \App\Services\DistributedDatabaseService::setHQ();
+                $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
+            } catch (\Exception $e) {}
+        }
+
+        if (!$user) {
+            return response()->json(['message' => 'We could not find a user with that email address.'], 404);
+        }
+
+        $otp = $otpService->generateResetOtp($user);
+
+        \App\Services\DistributedDatabaseService::setHQ();
+
+        return response()->json([
+            'message' => 'Password reset code has been generated.',
+            'email' => $user->email,
+            'otp' => $otp,
+        ]);
+    }
+
+    public function resetPassword(Request $request, OtpService $otpService)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+        ]);
+
+        $normalizedEmail = strtolower(trim($validated['email']));
+        $user = null;
+
+        $branch = \App\Services\DistributedDatabaseService::findUserBranch($normalizedEmail);
+        if ($branch) {
+            try {
+                \App\Services\DistributedDatabaseService::setActiveBranch($branch);
+                $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
+            } catch (\Exception $e) {}
+        } else {
+            try {
+                \App\Services\DistributedDatabaseService::setHQ();
+                $user = User::whereRaw('LOWER(email) = ?', [$normalizedEmail])->first();
+            } catch (\Exception $e) {}
+        }
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        if (!$otpService->verifyResetOtp($user, $validated['otp'])) {
+            return response()->json(['message' => 'The reset code is invalid or has expired.'], 422);
+        }
+
+        $user->update([
+            'password' => $validated['password'],
+        ]);
+
+        try {
+            AuditLog::create([
+                'user_id' => $user->id,
+                'action' => 'password_reset_success',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'severity' => 'high',
+            ]);
+        } catch (\Exception $e) {}
+
+        \App\Services\DistributedDatabaseService::setHQ();
+
+        return response()->json([
+            'message' => 'Your password has been reset successfully! You can now log in.',
         ]);
     }
 }

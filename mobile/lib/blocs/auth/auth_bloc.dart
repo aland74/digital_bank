@@ -21,6 +21,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutRequested>(_onLogoutRequested);
     on<BiometricLoginRequested>(_onBiometricLoginRequested);
     on<ResendOtpRequested>(_onResendOtpRequested);
+    on<ForgotPasswordRequested>(_onForgotPasswordRequested);
+    on<ResetPasswordRequested>(_onResetPasswordRequested);
   }
 
   Future<void> _onCheckAuthStatus(
@@ -184,6 +186,45 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // To avoid displacing the user from the OTP screen, we emit
       // AuthOtpRequired again to signal a successful refresh of the OTP request.
       emit(AuthOtpRequired(email: event.email));
+    } else {
+      emit(AuthError(message: response.errorMessage));
+    }
+  }
+
+  Future<void> _onForgotPasswordRequested(
+    ForgotPasswordRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+
+    final response = await _authRepository.forgotPassword(event.email);
+
+    if (response.success && response.data != null) {
+      final data = response.data!;
+      emit(AuthForgotPasswordSuccess(
+        email: data['email'] as String? ?? event.email,
+        otp: data['otp'] as String?,
+      ));
+    } else {
+      emit(AuthError(message: response.errorMessage));
+    }
+  }
+
+  Future<void> _onResetPasswordRequested(
+    ResetPasswordRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+
+    final response = await _authRepository.resetPassword(
+      email: event.email,
+      otp: event.otp,
+      password: event.newPassword,
+      passwordConfirmation: event.passwordConfirmation,
+    );
+
+    if (response.success) {
+      emit(const AuthResetPasswordSuccess());
     } else {
       emit(AuthError(message: response.errorMessage));
     }

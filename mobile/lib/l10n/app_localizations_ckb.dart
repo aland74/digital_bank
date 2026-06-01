@@ -9,7 +9,7 @@ class AppLocalizationsCkb extends AppLocalizations {
   AppLocalizationsCkb([String locale = 'ckb']) : super(locale);
 
   @override
-  String get appTitle => 'نێکساس بانک';
+  String get appTitle => 'بانکی دابەشکراو';
 
   @override
   String get appTagline => 'بانکاری دیجیتاڵی پریمیەم';
@@ -45,7 +45,7 @@ class AppLocalizationsCkb extends AppLocalizations {
   String get registerTitle => 'دروستکردنی هەژمار';
 
   @override
-  String get registerSubtitle => 'ئەمڕۆ ببە بەندی نێکساس بانک';
+  String get registerSubtitle => 'ئەمڕۆ ببە بەندێکی بانکی دابەشکراو';
 
   @override
   String get registerName => 'ناوی تەواو';
@@ -114,6 +114,38 @@ class AppLocalizationsCkb extends AppLocalizations {
 
   @override
   String get dashboardNoTransactions => 'هیچ مەوەلەیەکی ئەم دواییانە نییە';
+
+  @override
+  String dashboardHello(String name) {
+    return 'سڵاو، $name';
+  }
+
+  @override
+  String get dashboardGoodMorning => 'بەیانیت باش';
+
+  @override
+  String get dashboardGoodAfternoon => 'ڕۆژت باش';
+
+  @override
+  String get dashboardGoodEvening => 'ئێوارەت باش';
+
+  @override
+  String get dashboardWelcomeBack => 'بەخێربێیتەوە';
+
+  @override
+  String get dashboardUsdBalance => 'باڵانسی دۆلار';
+
+  @override
+  String get dashboardIqdBalance => 'باڵانسی دینار';
+
+  @override
+  String get dashboardSendMoney => 'ناردنی پارە';
+
+  @override
+  String get dashboardConvert => 'گۆڕین';
+
+  @override
+  String get dashboardLoading => 'داشبۆرد لۆد دەکرێت...';
 
   @override
   String get navHome => 'سەرەتا';
@@ -392,4 +424,110 @@ class AppLocalizationsCkb extends AppLocalizations {
 
   @override
   String get statusRejected => 'ڕەتکراوە';
+
+  @override
+  String get registerBranchRequired => 'تکایە لقێک هەڵبژێرە';
+
+  @override
+  String get registerPasswordMismatch => 'وشە نهێنییەکان وەک یەک نین';
+
+  @override
+  String get forgotPasswordTitle => 'وشەی نهێنیت لەبیرکردووە؟';
+
+  @override
+  String get forgotPasswordSubtitle =>
+      'ناونیشانی ئیمەیڵەکەت بنووسە و ئێمە کۆدێکی پارێزراوت بۆ دەنێرین بۆ گۆڕینی وشەی نهێنی.';
+
+  @override
+  String get forgotPasswordSendCode => 'ناردنی کۆدی گۆڕین';
+
+  @override
+  String get forgotPasswordBackToLogin => 'گەڕانەوە بۆ چوونە ژوورەوە';
+
+  @override
+  String get resetPasswordTitle => 'وشەی نهێنی بگۆڕە';
+
+  @override
+  String get resetPasswordSubtitle =>
+      'کۆدە ٦ ژمارەییەکە و وشەی نهێنی نوێ بنووسە.';
+
+  @override
+  String get resetPasswordSuccess =>
+      'وشەی نهێنی بە سەرکەوتوویی گۆڕدرا! بە وشەی نهێنی نوێوە بچۆ ژوورەوە.';
+
+  @override
+  String get resetPasswordNew => 'وشەی نهێنی نوێ';
+
+  @override
+  String get resetPasswordConfirm => 'دووپاتکردنەوەی وشەی نهێنی نوێ';
+
+  @override
+  String get resetPasswordButton => 'گۆڕینی وشەی نهێنی';
+
+  @override
+  String get resetPasswordResend => 'ناردنەوەی کۆدی گۆڕین';
+
+  @override
+  String get resetPasswordHint => 'لانی کەم ٨ پیت، پیتی گەورە و بچووک و ژمارە';
+
+  @override
+  String get resetPasswordConfirmHint => 'وشەی نهێنیت دووپات بکەرەوە';
+
+  @override
+  String get resetCodeLabel => 'کۆدی گۆڕین (OTP)';
+
+  @override
+  String get resetCodeRequired => 'تکایە کۆدی گۆڕین بنووسە';
+
+  @override
+  String get resetCodeLengthError => 'کۆدەکە دەبێت ٦ ژمارە بێت';
+
+  @override
+  String get resetPasswordRequired => 'تکایە وشەی نهێنی نوێ بنووسە';
+
+  @override
+  String get resetPasswordMinLength => 'پێویستە وشەی نهێنی لانی کەم ٨ پیت بێت';
+
+  @override
+  String get resetPasswordUppercase => 'پێویستە پیتی گەورە تێدابێت';
+
+  @override
+  String get resetPasswordLowercase => 'پێویستە پیتی بچووک تێدابێت';
+
+  @override
+  String get resetPasswordNumber => 'پێویستە ژمارە تێدابێت';
+
+  @override
+  String get resetPasswordConfirmRequired =>
+      'تکایە وشەی نهێنیەکەت دووپات بکەرەوە';
+
+  @override
+  String get resetPasswordMismatch => 'وشە نهێنییەکان وەک یەک نین';
+
+  @override
+  String get sandboxTitle => 'ژینگەی تاقیکاری گەشەپێدەر';
+
+  @override
+  String get sandboxOtpLabel => 'کۆدی OTP تۆ: ';
+
+  @override
+  String get otpTwoFactorTitle => 'پشتڕاستکردنەوەی دوو قۆناغی';
+
+  @override
+  String otpSentToEmail(String email) {
+    return 'کۆدە ٦ ژمارەییەکە بنووسە کە نێردراوە بۆ\n$email';
+  }
+
+  @override
+  String get otpResentSuccess =>
+      'کۆدی پشتڕاستکردنەوە بە سەرکەوتوویی نێردرایەوە!';
+
+  @override
+  String get otpSecurityNote =>
+      'هەرگیز کۆدی پشتڕاستکردنەوەکەت بە کەس مەدە، بە کارمەندانی بانکیشەوە.';
+
+  @override
+  String otpResendInSeconds(String seconds) {
+    return 'ناردنەوەی کۆد لە $seconds چرکە';
+  }
 }

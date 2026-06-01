@@ -50,3 +50,17 @@ class AuthError extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+class AuthForgotPasswordSuccess extends AuthState {
+  final String email;
+  final String? otp; // Sandbox mode returns the OTP for developer convenience
+
+  const AuthForgotPasswordSuccess({required this.email, this.otp});
+
+  @override
+  List<Object?> get props => [email, otp];
+}
+
+class AuthResetPasswordSuccess extends AuthState {
+  const AuthResetPasswordSuccess();
+}
